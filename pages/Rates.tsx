@@ -63,6 +63,7 @@ const Rates: React.FC = () => {
   };
 
   const addNew = async () => {
+    setError(null);
     try {
       const newRate = await createServiceRate({
         name: 'Новая услуга',
@@ -73,7 +74,9 @@ const Rates: React.FC = () => {
       setRates((prev) => [...prev, newRate]);
       startEdit(newRate);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка создания');
+      const msg = err instanceof Error ? err.message : 'Ошибка создания';
+      setError(msg);
+      console.error('createServiceRate:', err);
     }
   };
 
@@ -204,7 +207,7 @@ const Rates: React.FC = () => {
                       <td className="px-6 py-3 font-medium text-slate-700">{rate.name}</td>
                       <td className="px-6 py-3 text-slate-500">{rate.unit}</td>
                       <td className="px-6 py-3 text-right font-mono text-slate-700">
-                        {rate.price.toLocaleString('ru-RU')}
+                        {(Number(rate.price) || 0).toLocaleString('ru-RU')}
                       </td>
                       <td className="px-6 py-3 text-center">
                         <span className={`badge ${rate.active ? 'badge-green' : 'badge-gray'}`}>

@@ -142,9 +142,15 @@ export async function getServiceRates(activeOnly = true): Promise<ServiceRate[]>
 }
 
 export async function createServiceRate(rate: Omit<ServiceRate, 'id' | 'created_at'>): Promise<ServiceRate> {
+  const row = {
+    name: rate.name,
+    price: Number(rate.price) || 0,
+    unit: rate.unit || 'шт',
+    active: rate.active ?? true,
+  };
   const { data, error } = await supabase
     .from('service_rates')
-    .insert(rate)
+    .insert(row)
     .select()
     .single();
   if (error) throw error;
