@@ -1,18 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import type {
-  User,
-  Company,
-  Material,
-  ServiceRate,
-  Position,
-  Movement,
-  WorkLog,
-  AuditLog,
-  MovementInput,
-  WorkLogInput,
-  OwnershipType,
-  OperationType,
-} from '../types';
+import { User, Company, Material, ServiceRate, Position, Movement, WorkLog, AuditLog, MovementInput, WorkLogInput, OwnershipType } from '../types';
 
 // Supabase configuration — нормализуем URL (на случай дублирования в секретах)
 const rawUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim() || 'https://gbgfezeaaawfwhhlocsz.supabase.co';
@@ -24,7 +11,21 @@ const SUPABASE_ANON_KEY = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
 console.log('[Supabase] URL:', SUPABASE_URL);
 console.log('[Supabase] Key length:', SUPABASE_ANON_KEY?.length || 0);
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storage: window.localStorage,
+  },
+  db: {
+    schema: 'public',
+  },
+  // Глобальные настройки повторных попыток
+  global: {
+    headers: { 'x-my-custom-header': 'metaltrack' },
+  },
+});
 
 // === Auth Functions ===
 
@@ -52,10 +53,14 @@ export async function getCurrentUser(): Promise<User | null> {
     );
 
     try {
-      const { data: { user: authUser }, error: authError } = await Promise.race([
+      // Пытаемся получить данные пользователя от сервера
+      // Используем Promise.race для таймаута
+      const result = await Promise.race([
         supabase.auth.getUser(),
         timeoutPromise
       ]) as any;
+
+      const { data: { user: authUser }, error: authError } = result;
 
       if (authError) throw authError;
       
@@ -228,7 +233,7 @@ export async function deleteServiceRate(id: string): Promise<void> {
   if (error) throw error;
 }
 
-// === Positions ===
+// === Positions & Inventory ===
 
 export async function getPositions(): Promise<Position[]> {
   const { data, error } = await supabase
@@ -295,7 +300,8 @@ export async function getPositionBalance(positionId: string): Promise<number> {
     .select('balance')
     .eq('id', positionId)
     .single();
-  if (error) throw error;
+  
+  if (error) return 0;
   return data?.balance || 0;
 }
 
@@ -306,14 +312,14 @@ export async function getMovements(): Promise<Movement[]> {
     .from('movements')
     .select(`
       *,
+      user:users(name, email),
       position:positions(
         *,
         company:companies(*),
         material:materials(*)
       )
     `)
-    .order('movement_date', { ascending: false })
-    .order('created_at', { ascending: false });
+    .order('movement_date', { ascending: false });
   if (error) throw error;
   return data || [];
 }
@@ -359,28 +365,6 @@ export async function createMovement(input: MovementInput): Promise<Movement> {
 export async function deleteMovement(id: string): Promise<void> {
   const { error } = await supabase.from('movements').delete().eq('id', id);
   if (error) throw error;
-  // Balance reverted by DB trigger update_position_balance_on_movement
-}
-
-export async function updateMovement(
-  id: string, 
-  updates: Partial<Movement>
-): Promise<Movement> {
-  const { data, error } = await supabase
-    .from('movements')
-    .update(updates)
-    .eq('id', id)
-    .select(`
-      *,
-      position:positions(
-        *,
-        company:companies(*),
-        material:materials(*)
-      )
-    `)
-    .single();
-  if (error) throw error;
-  return data;
 }
 
 // === Work Logs ===
@@ -390,18 +374,22 @@ export async function getWorkLogs(): Promise<WorkLog[]> {
     .from('work_logs')
     .select(`
       *,
+      user:users(name, email),
       company:companies(*),
       material:materials(*),
       service:service_rates(*)
     `)
-    .order('work_date', { ascending: false })
-    .order('created_at', { ascending: false });
+    .order('work_date', { ascending: false });
   if (error) throw error;
   return data || [];
 }
 
-export async function createWorkLog(input: WorkLogInput, servicePrice: number): Promise<WorkLog> {
+export async function createWorkLog(input: WorkLogInput, pricePerUnit: number): Promise<WorkLog> {
   const { data: { user } } = await supabase.auth.getUser();
+  
+  // Calculate total price
+  const totalPrice = input.quantity * pricePerUnit;
+
   const { data, error } = await supabase
     .from('work_logs')
     .insert({
@@ -409,7 +397,7 @@ export async function createWorkLog(input: WorkLogInput, servicePrice: number): 
       material_id: input.material_id || null,
       service_id: input.service_id,
       quantity: input.quantity,
-      total_price: input.quantity * servicePrice,
+      total_price: totalPrice,
       note: input.note || null,
       work_date: input.work_date,
       created_by: user?.id,
@@ -421,6 +409,7 @@ export async function createWorkLog(input: WorkLogInput, servicePrice: number): 
       service:service_rates(*)
     `)
     .single();
+
   if (error) throw error;
   return data;
 }
@@ -430,33 +419,18 @@ export async function deleteWorkLog(id: string): Promise<void> {
   if (error) throw error;
 }
 
-export async function updateWorkLog(id: string, updates: Partial<WorkLog>): Promise<WorkLog> {
-  const { data, error } = await supabase
-    .from('work_logs')
-    .update(updates)
-    .eq('id', id)
-    .select(`
-      *,
-      company:companies(*),
-      material:materials(*),
-      service:service_rates(*)
-    `)
-    .single();
-  if (error) throw error;
-  return data;
-}
-
-// === Audit Log ===
+// === Audit ===
 
 export async function getAuditLogs(limit = 100): Promise<AuditLog[]> {
   const { data, error } = await supabase
     .from('audit_log')
     .select(`
       *,
-      user:users(*)
+      user:users(name, email)
     `)
     .order('created_at', { ascending: false })
     .limit(limit);
+
   if (error) throw error;
   return data || [];
 }

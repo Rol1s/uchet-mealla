@@ -21,15 +21,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const loadUser = useCallback(async () => {
     try {
       const currentUser = await getCurrentUser();
-      console.log('[AuthContext] loadUser got:', currentUser?.email, currentUser?.role);
-      setUser(currentUser);
-      return currentUser;
-    } catch (error) {
-      console.error('[AuthContext] Error loading user:', error);
+      
+      // Если юзер вернулся - отлично, сохраняем
+      if (currentUser) {
+        console.log('[AuthContext] loadUser got:', currentUser.email, currentUser.role);
+        setUser(currentUser);
+        return currentUser;
+      }
+      
+      // Если вернулся null, проверяем, есть ли активная сессия в клиенте
+      // Если сессия есть, но getCurrentUser вернул null (например, сбой сети), 
+      // то НЕ разлогиниваем пользователя, оставляем старого (если был)
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        console.warn('[AuthContext] Have session but no profile. Keeping current state.');
+        // Можно добавить логику "Офлайн режим", но главное - не setUser(null)
+        return user; 
+      }
+
+      // Если сессии точно нет - тогда сбрасываем
       setUser(null);
       return null;
+
+    } catch (error) {
+      console.error('[AuthContext] Error loading user:', error);
+      // При ошибке НЕ сбрасываем пользователя, если он был
+      return user;
     }
-  }, []);
+  }, [user]); // добавляем user в зависимости, чтобы можно было вернуть текущего
 
   useEffect(() => {
     let isMounted = true;
@@ -42,13 +61,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     initUser();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!isMounted) return;
-      if (event === 'SIGNED_IN') {
+      console.log('[AuthContext] Auth event:', event);
+      
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        // При обновлении токена или входе - обновляем данные
         await loadUser();
       } else if (event === 'SIGNED_OUT') {
+        // Только явный выход сбрасывает пользователя
         setUser(null);
       }
+      // Игнорируем остальные события (INITIAL_SESSION и т.д.), так как initUser уже отработал
     });
 
     return () => {
