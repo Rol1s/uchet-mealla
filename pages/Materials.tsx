@@ -67,8 +67,9 @@ const Materials: React.FC = () => {
 
   const addNew = async () => {
     try {
+      const uniqueSuffix = new Date().toISOString().slice(11, 19);
       const newMaterial = await createMaterial({
-        name: 'Новый материал',
+        name: `Новый материал ${uniqueSuffix}`,
         active: true,
       });
       setMaterials((prev) => [...prev, newMaterial]);

@@ -70,8 +70,9 @@ const Rates: React.FC = () => {
   const addNew = async () => {
     setError(null);
     try {
+      const uniqueSuffix = new Date().toISOString().slice(11, 19);
       const newRate = await createServiceRate({
-        name: 'Новая услуга',
+        name: `Новая услуга ${uniqueSuffix}`,
         price: 0,
         unit: 'шт',
         active: true,

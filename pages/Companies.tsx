@@ -74,8 +74,9 @@ const Companies: React.FC = () => {
 
   const addNew = async () => {
     try {
+      const uniqueSuffix = new Date().toISOString().slice(11, 19); // HH:MM:SS
       const newCompany = await createCompany({
-        name: 'Новая компания',
+        name: `Новая компания ${uniqueSuffix}`,
         type: 'both',
         active: true,
       });
