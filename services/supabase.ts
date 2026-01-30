@@ -21,13 +21,21 @@ const SUPABASE_URL = rawUrl.includes('supabase.co')
   : rawUrl;
 const SUPABASE_ANON_KEY = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
 
+console.log('[Supabase] URL:', SUPABASE_URL);
+console.log('[Supabase] Key length:', SUPABASE_ANON_KEY?.length || 0);
+
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // === Auth Functions ===
 
 export async function signIn(email: string, password: string) {
+  console.log('[Auth] Signing in...', email);
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) throw error;
+  if (error) {
+    console.error('[Auth] Sign in error:', error);
+    throw error;
+  }
+  console.log('[Auth] Sign in success, session:', !!data.session);
   return data;
 }
 
@@ -38,22 +46,64 @@ export async function signOut() {
 
 export async function getCurrentUser(): Promise<User | null> {
   try {
-    const { data: { user: authUser } } = await supabase.auth.getUser();
-    if (!authUser?.id) return null;
+    console.log('[Auth] getCurrentUser called');
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError) {
+      console.error('[Auth] getUser error:', authError);
+      return null;
+    }
+    
+    if (!authUser?.id) {
+      console.log('[Auth] No auth user found');
+      return null;
+    }
+    
+    console.log('[Auth] Auth user:', authUser.id, authUser.email);
 
+    // Try to get user from public.users
     const { data, error } = await supabase
       .from('users')
       .select('*')
       .eq('id', authUser.id)
       .single();
 
+    console.log('[Auth] public.users query result:', { data, error });
+
+    // If user exists, return it
+    if (data) {
+      console.log('[Auth] User found:', data.email, data.role);
+      return data;
+    }
+
+    // User not found in public.users (PGRST116) - create it
+    if (error && error.code === 'PGRST116') {
+      console.log('[Auth] User not in public.users, creating...');
+      const { data: newUser, error: insertError } = await supabase
+        .from('users')
+        .insert({
+          id: authUser.id,
+          email: authUser.email || '',
+          role: 'operator',
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('[Auth] Error creating user profile:', insertError);
+        return null;
+      }
+      console.log('[Auth] Created new user:', newUser);
+      return newUser;
+    }
+
     if (error) {
-      console.error('Error fetching user profile:', error);
+      console.error('[Auth] Error fetching user profile:', error);
       return null;
     }
     return data;
   } catch (err) {
-    console.error('getCurrentUser error:', err);
+    console.error('[Auth] getCurrentUser error:', err);
     return null;
   }
 }

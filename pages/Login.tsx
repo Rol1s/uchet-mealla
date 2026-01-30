@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Loader2, AlertCircle } from 'lucide-react';
@@ -9,11 +9,19 @@ const Login: React.FC = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const { signIn } = useAuth();
+  const { signIn, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/';
+
+  // Navigate when authenticated (after state updates)
+  useEffect(() => {
+    if (isAuthenticated) {
+      console.log('[Login] User authenticated, navigating to:', from);
+      navigate(from, { replace: true });
+    }
+  }, [isAuthenticated, navigate, from]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,11 +30,10 @@ const Login: React.FC = () => {
 
     try {
       await signIn(email, password);
-      navigate(from, { replace: true });
+      // Navigation will happen via useEffect when isAuthenticated becomes true
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Ошибка входа';
       setError(message === 'Invalid login credentials' ? 'Неверный email или пароль' : message);
-    } finally {
       setIsLoading(false);
     }
   };

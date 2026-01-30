@@ -21,10 +21,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const loadUser = useCallback(async () => {
     try {
       const currentUser = await getCurrentUser();
+      console.log('[AuthContext] loadUser got:', currentUser?.email, currentUser?.role);
       setUser(currentUser);
+      return currentUser;
     } catch (error) {
-      console.error('Error loading user:', error);
+      console.error('[AuthContext] Error loading user:', error);
       setUser(null);
+      return null;
     }
   }, []);
 
@@ -55,14 +58,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, [loadUser]);
 
   const signIn = async (email: string, password: string) => {
+    console.log('[AuthContext] signIn started');
     setLoading(true);
     try {
       await apiSignIn(email, password);
-      await loadUser();
+      console.log('[AuthContext] apiSignIn completed, loading user...');
+      const loadedUser = await loadUser();
+      console.log('[AuthContext] loadUser returned:', loadedUser?.email);
     } catch (error) {
-      console.error('Sign in error:', error);
-      throw error; // Re-throw so Login page can handle it
+      console.error('[AuthContext] Sign in error:', error);
+      throw error;
     } finally {
+      console.log('[AuthContext] signIn finished, setting loading=false');
       setLoading(false);
     }
   };
@@ -78,6 +85,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setLoading(false);
     }
   };
+
+  // Debug: log state changes
+  useEffect(() => {
+    console.log('[AuthContext] State changed - user:', user?.email, 'loading:', loading, 'isAuthenticated:', !!user);
+  }, [user, loading]);
 
   const value: AuthContextType = {
     user,

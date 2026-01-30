@@ -114,8 +114,10 @@ ALTER TABLE public.movements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.work_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.audit_log ENABLE ROW LEVEL SECURITY;
 
--- Users: read own row
+-- Users: read own row, insert own row
 CREATE POLICY "users_select_own" ON public.users FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "users_insert_self" ON public.users FOR INSERT WITH CHECK (auth.uid() = id);
+CREATE POLICY "users_update_self" ON public.users FOR UPDATE USING (auth.uid() = id);
 
 -- Companies: all authenticated can read; insert/update/delete for all (simplified - can tighten by role in app)
 CREATE POLICY "companies_all" ON public.companies FOR ALL USING (auth.role() = 'authenticated');
