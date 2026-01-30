@@ -14,9 +14,12 @@ import type {
   OperationType,
 } from '../types';
 
-// Supabase configuration
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://gbgfezeaaawfwhhlocsz.supabase.co';
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+// Supabase configuration — нормализуем URL (на случай дублирования в секретах)
+const rawUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim() || 'https://gbgfezeaaawfwhhlocsz.supabase.co';
+const SUPABASE_URL = rawUrl.includes('supabase.co')
+  ? (rawUrl.match(/https?:\/\/[^/]+\.supabase\.co/)?.[0] ?? rawUrl)
+  : rawUrl;
+const SUPABASE_ANON_KEY = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
