@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write   # нужен для пуша в ветку gh-pages
   pages: write
 
 jobs:
