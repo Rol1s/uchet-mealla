@@ -11,19 +11,25 @@ const Inventory: React.FC = () => {
   const [ownershipFilter, setOwnershipFilter] = useState<OwnershipType | 'all'>('all');
 
   useEffect(() => {
+    let isMounted = true;
     const loadData = async () => {
       try {
         setLoading(true);
         const data = await getPositions();
-        setPositions(data);
-        setError(null);
+        if (isMounted) {
+          setPositions(data);
+          setError(null);
+        }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Ошибка загрузки данных');
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : 'Ошибка загрузки данных');
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
     loadData();
+    return () => { isMounted = false; };
   }, []);
 
   const inventory = useMemo(() => {
@@ -118,9 +124,12 @@ const Inventory: React.FC = () => {
     const csv = [headers.join(';'), ...rows.map((r) => r.join(';'))].join('\n');
     const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
+    const url = URL.createObjectURL(blob);
+    link.href = url;
     link.download = `inventory_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
+    // Release memory
+    URL.revokeObjectURL(url);
   };
 
   if (loading) {

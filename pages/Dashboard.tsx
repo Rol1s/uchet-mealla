@@ -12,6 +12,7 @@ const Dashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
     const loadData = async () => {
       try {
         setLoading(true);
@@ -20,17 +21,22 @@ const Dashboard: React.FC = () => {
           getWorkLogs(),
           getPositions(),
         ]);
-        setMovements(movementsData);
-        setWorkLogs(workLogsData);
-        setPositions(positionsData);
-        setError(null);
+        if (isMounted) {
+          setMovements(movementsData);
+          setWorkLogs(workLogsData);
+          setPositions(positionsData);
+          setError(null);
+        }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Ошибка загрузки данных');
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : 'Ошибка загрузки данных');
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
     loadData();
+    return () => { isMounted = false; };
   }, []);
 
   const stats = useMemo(() => {

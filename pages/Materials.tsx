@@ -13,21 +13,26 @@ const Materials: React.FC = () => {
   const [editForm, setEditForm] = useState<Partial<Material>>({});
   const [showInactive, setShowInactive] = useState(false);
 
-  const loadMaterials = async () => {
-    try {
-      setLoading(true);
-      const data = await getMaterials(!showInactive);
-      setMaterials(data);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка загрузки материалов');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    let isMounted = true;
+    const loadMaterials = async () => {
+      try {
+        setLoading(true);
+        const data = await getMaterials(!showInactive);
+        if (isMounted) {
+          setMaterials(data);
+          setError(null);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : 'Ошибка загрузки материалов');
+        }
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
     loadMaterials();
+    return () => { isMounted = false; };
   }, [showInactive]);
 
   const handleDelete = async (id: string) => {

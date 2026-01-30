@@ -24,29 +24,34 @@ const Works: React.FC = () => {
     note: '',
   });
 
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const [logsData, ratesData, companiesData, materialsData] = await Promise.all([
-        getWorkLogs(),
-        getServiceRates(),
-        getCompanies(),
-        getMaterials(),
-      ]);
-      setLogs(logsData);
-      setRates(ratesData);
-      setCompanies(companiesData);
-      setMaterials(materialsData);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка загрузки данных');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    let isMounted = true;
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        const [logsData, ratesData, companiesData, materialsData] = await Promise.all([
+          getWorkLogs(),
+          getServiceRates(),
+          getCompanies(),
+          getMaterials(),
+        ]);
+        if (isMounted) {
+          setLogs(logsData);
+          setRates(ratesData);
+          setCompanies(companiesData);
+          setMaterials(materialsData);
+          setError(null);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : 'Ошибка загрузки данных');
+        }
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
     loadData();
+    return () => { isMounted = false; };
   }, []);
 
   const selectedRate = rates.find((r) => r.id === formState.service_id);

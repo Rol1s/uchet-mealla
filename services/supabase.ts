@@ -204,10 +204,12 @@ export async function findOrCreatePosition(
     .eq('ownership', ownership)
     .single();
 
+  // Position found - return it
   if (existing) return existing;
 
-  // Create new position if not found
+  // PGRST116 = "JSON object requested, multiple (or no) rows returned" - means not found
   if (findError && findError.code === 'PGRST116') {
+    // Create new position
     const { data: newPosition, error: createError } = await supabase
       .from('positions')
       .insert({
@@ -219,12 +221,17 @@ export async function findOrCreatePosition(
       })
       .select()
       .single();
+
     if (createError) throw createError;
+    if (!newPosition) throw new Error('Failed to create position: no data returned');
     return newPosition;
   }
 
+  // Other error occurred
   if (findError) throw findError;
-  return existing!;
+
+  // Should never reach here, but throw if we do
+  throw new Error('Unexpected state in findOrCreatePosition');
 }
 
 export async function getPositionBalance(positionId: string): Promise<number> {

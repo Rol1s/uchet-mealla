@@ -29,22 +29,9 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children, requireAdmin = false })
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Requires admin but user is not admin
+  // Requires admin but user is not admin - redirect to home
   if (requireAdmin && !isAdmin) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="text-center max-w-md p-8 bg-white rounded-xl shadow-lg">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-3xl">🔒</span>
-          </div>
-          <h2 className="text-xl font-bold text-slate-800 mb-2">Доступ запрещен</h2>
-          <p className="text-slate-500 mb-4">
-            Эта страница доступна только администраторам.
-          </p>
-          <Navigate to="/" replace />
-        </div>
-      </div>
-    );
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;

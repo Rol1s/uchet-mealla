@@ -36,7 +36,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const handleSignOut = async () => {
     if (window.confirm('Выйти из системы?')) {
-      await signOut();
+      try {
+        await signOut();
+      } catch (error) {
+        console.error('Sign out failed:', error);
+      }
     }
   };
 

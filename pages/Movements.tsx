@@ -28,27 +28,32 @@ const Movements: React.FC = () => {
     note: '',
   });
 
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const [movementsData, companiesData, materialsData] = await Promise.all([
-        getMovements(),
-        getCompanies(),
-        getMaterials(),
-      ]);
-      setMovements(movementsData);
-      setCompanies(companiesData);
-      setMaterials(materialsData);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка загрузки данных');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    let isMounted = true;
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        const [movementsData, companiesData, materialsData] = await Promise.all([
+          getMovements(),
+          getCompanies(),
+          getMaterials(),
+        ]);
+        if (isMounted) {
+          setMovements(movementsData);
+          setCompanies(companiesData);
+          setMaterials(materialsData);
+          setError(null);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : 'Ошибка загрузки данных');
+        }
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
     loadData();
+    return () => { isMounted = false; };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {

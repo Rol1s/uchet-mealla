@@ -19,21 +19,26 @@ const Companies: React.FC = () => {
   const [editForm, setEditForm] = useState<Partial<Company>>({});
   const [showInactive, setShowInactive] = useState(false);
 
-  const loadCompanies = async () => {
-    try {
-      setLoading(true);
-      const data = await getCompanies(!showInactive);
-      setCompanies(data);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка загрузки компаний');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    let isMounted = true;
+    const loadCompanies = async () => {
+      try {
+        setLoading(true);
+        const data = await getCompanies(!showInactive);
+        if (isMounted) {
+          setCompanies(data);
+          setError(null);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : 'Ошибка загрузки компаний');
+        }
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
     loadCompanies();
+    return () => { isMounted = false; };
   }, [showInactive]);
 
   const handleDelete = async (id: string) => {

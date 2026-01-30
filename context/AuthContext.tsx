@@ -25,29 +25,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       console.error('Error loading user:', error);
       setUser(null);
-    } finally {
-      setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    // Initial load
-    loadUser();
+    let isMounted = true;
+
+    const initUser = async () => {
+      await loadUser();
+      if (isMounted) setLoading(false);
+    };
+
+    initUser();
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
+      if (!isMounted) return;
       if (event === 'SIGNED_IN') {
-        try {
-          await loadUser();
-        } catch {
-          setUser(null);
-        }
+        await loadUser();
       } else if (event === 'SIGNED_OUT') {
         setUser(null);
       }
     });
 
     return () => {
+      isMounted = false;
       subscription.unsubscribe();
     };
   }, [loadUser]);
@@ -57,6 +59,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       await apiSignIn(email, password);
       await loadUser();
+    } catch (error) {
+      console.error('Sign in error:', error);
+      throw error; // Re-throw so Login page can handle it
     } finally {
       setLoading(false);
     }
@@ -67,6 +72,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       await apiSignOut();
       setUser(null);
+    } catch (error) {
+      console.error('Sign out error:', error);
     } finally {
       setLoading(false);
     }

@@ -28,19 +28,25 @@ const History: React.FC = () => {
   const [filterAction, setFilterAction] = useState<string>('');
 
   useEffect(() => {
+    let isMounted = true;
     const loadLogs = async () => {
       try {
         setLoading(true);
         const data = await getAuditLogs(500);
-        setLogs(data);
-        setError(null);
+        if (isMounted) {
+          setLogs(data);
+          setError(null);
+        }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Ошибка загрузки истории');
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : 'Ошибка загрузки истории');
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
     loadLogs();
+    return () => { isMounted = false; };
   }, []);
 
   const uniqueTables = [...new Set(logs.map((l) => l.table_name))];

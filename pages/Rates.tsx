@@ -13,21 +13,26 @@ const Rates: React.FC = () => {
   const [editForm, setEditForm] = useState<Partial<ServiceRate>>({});
   const [showInactive, setShowInactive] = useState(false);
 
-  const loadRates = async () => {
-    try {
-      setLoading(true);
-      const data = await getServiceRates(!showInactive);
-      setRates(data);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка загрузки тарифов');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    let isMounted = true;
+    const loadRates = async () => {
+      try {
+        setLoading(true);
+        const data = await getServiceRates(!showInactive);
+        if (isMounted) {
+          setRates(data);
+          setError(null);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : 'Ошибка загрузки тарифов');
+        }
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
     loadRates();
+    return () => { isMounted = false; };
   }, [showInactive]);
 
   const handleDelete = async (id: string) => {
