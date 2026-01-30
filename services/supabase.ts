@@ -46,76 +46,71 @@ export async function signOut() {
 
 export async function getCurrentUser(): Promise<User | null> {
   try {
-    console.log('[Auth] getCurrentUser called');
-    
-    // Создаем промис с тайм-аутом 5 секунд
+    // 1. Попытка получить свежие данные от сервера с таймаутом 15с
     const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Auth request timeout')), 5000)
+      setTimeout(() => reject(new Error('Auth request timeout')), 15000)
     );
 
-    // Гоним request и timeout наперегонки
-    const { data: { user: authUser }, error: authError } = await Promise.race([
-      supabase.auth.getUser(),
-      timeoutPromise
-    ]) as any;
-    
-    if (authError) {
-      console.error('[Auth] getUser error:', authError);
-      return null;
-    }
-    
-    if (!authUser?.id) {
-      console.log('[Auth] No auth user found');
-      return null;
-    }
-    
-    console.log('[Auth] Auth user:', authUser.id, authUser.email);
+    try {
+      const { data: { user: authUser }, error: authError } = await Promise.race([
+        supabase.auth.getUser(),
+        timeoutPromise
+      ]) as any;
 
-    // Try to get user from public.users
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', authUser.id)
-      .single();
+      if (authError) throw authError;
+      
+      if (!authUser?.id) return null; // Явно нет юзера
 
-    console.log('[Auth] public.users query result:', { data, error });
+      // Успешно получили юзера от сервера
+      return await fetchProfile(authUser);
 
-    // If user exists, return it
-    if (data) {
-      console.log('[Auth] User found:', data.email, data.role);
-      return data;
-    }
-
-    // User not found in public.users (PGRST116) - create it
-    if (error && error.code === 'PGRST116') {
-      console.log('[Auth] User not in public.users, creating...');
-      const { data: newUser, error: insertError } = await supabase
-        .from('users')
-        .insert({
-          id: authUser.id,
-          email: authUser.email || '',
-          role: 'operator',
-        })
-        .select()
-        .single();
-
-      if (insertError) {
-        console.error('[Auth] Error creating user profile:', insertError);
+    } catch (serverError) {
+      console.warn('[Auth] Server check failed, trying local session:', serverError);
+      
+      // 2. Фолбэк: если сервер недоступен/таймаут, проверяем локальную сессию
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session?.user) {
+        console.error('[Auth] No local session:', sessionError);
         return null;
       }
-      console.log('[Auth] Created new user:', newUser);
-      return newUser;
-    }
 
-    if (error) {
-      console.error('[Auth] Error fetching user profile:', error);
-      return null;
+      console.log('[Auth] Using local session fallback');
+      return await fetchProfile(session.user);
     }
-    return data;
   } catch (err) {
     console.error('[Auth] getCurrentUser error:', err);
     return null;
   }
+}
+
+// Вспомогательная функция для получения профиля
+async function fetchProfile(authUser: any): Promise<User | null> {
+  // Try to get user from public.users
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', authUser.id)
+    .single();
+
+  if (data) return data;
+
+  // Если профиля нет (PGRST116), создаем его
+  if (error && error.code === 'PGRST116') {
+    const { data: newUser, error: insertError } = await supabase
+      .from('users')
+      .insert({
+        id: authUser.id,
+        email: authUser.email || '',
+        role: 'operator',
+      })
+      .select()
+      .single();
+
+    if (!insertError) return newUser;
+  }
+
+  return null;
 }
 
 // === Companies ===
