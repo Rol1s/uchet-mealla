@@ -47,7 +47,17 @@ export async function signOut() {
 export async function getCurrentUser(): Promise<User | null> {
   try {
     console.log('[Auth] getCurrentUser called');
-    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+    
+    // Создаем промис с тайм-аутом 5 секунд
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Auth request timeout')), 5000)
+    );
+
+    // Гоним request и timeout наперегонки
+    const { data: { user: authUser }, error: authError } = await Promise.race([
+      supabase.auth.getUser(),
+      timeoutPromise
+    ]) as any;
     
     if (authError) {
       console.error('[Auth] getUser error:', authError);
