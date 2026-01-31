@@ -45,78 +45,7 @@ export async function signOut() {
   if (error) throw error;
 }
 
-export async function getCurrentUser(): Promise<User | null> {
-  try {
-    // 1. Попытка получить свежие данные от сервера с таймаутом 15с
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Auth request timeout')), 15000)
-    );
-
-    try {
-      // Пытаемся получить данные пользователя от сервера
-      // Используем Promise.race для таймаута
-      const result = await Promise.race([
-        supabase.auth.getUser(),
-        timeoutPromise
-      ]) as any;
-
-      const { data: { user: authUser }, error: authError } = result;
-
-      if (authError) throw authError;
-      
-      if (!authUser?.id) return null; // Явно нет юзера
-
-      // Успешно получили юзера от сервера
-      return await fetchProfile(authUser);
-
-    } catch (serverError) {
-      console.warn('[Auth] Server check failed, trying local session:', serverError);
-      
-      // 2. Фолбэк: если сервер недоступен/таймаут, проверяем локальную сессию
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError || !session?.user) {
-        console.error('[Auth] No local session:', sessionError);
-        return null;
-      }
-
-      console.log('[Auth] Using local session fallback');
-      return await fetchProfile(session.user);
-    }
-  } catch (err) {
-    console.error('[Auth] getCurrentUser error:', err);
-    return null;
-  }
-}
-
-// Вспомогательная функция для получения профиля
-async function fetchProfile(authUser: any): Promise<User | null> {
-  // Try to get user from public.users
-  const { data, error } = await supabase
-    .from('users')
-    .select('*')
-    .eq('id', authUser.id)
-    .single();
-
-  if (data) return data;
-
-  // Если профиля нет (PGRST116), создаем его
-  if (error && error.code === 'PGRST116') {
-    const { data: newUser, error: insertError } = await supabase
-      .from('users')
-      .insert({
-        id: authUser.id,
-        email: authUser.email || '',
-        role: 'operator',
-      })
-      .select()
-      .single();
-
-    if (!insertError) return newUser;
-  }
-
-  return null;
-}
+// getCurrentUser больше не нужен - логика перенесена в AuthContext
 
 // === Companies ===
 
