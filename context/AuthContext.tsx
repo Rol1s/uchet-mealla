@@ -23,24 +23,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('[Auth] Event:', event, 'Session:', !!session);
       
       if (session?.user) {
-        // Загружаем профиль из public.users
-        const { data: profile } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
+        // Создаем fallback пользователя из сессии
+        const fallbackUser: User = {
+          id: session.user.id,
+          email: session.user.email || '',
+          name: session.user.email?.split('@')[0] || 'User',
+          role: 'operator',
+          created_at: new Date().toISOString(),
+        };
         
-        if (profile) {
-          setUser(profile as User);
-        } else {
-          // Профиль не найден - создаем базовый объект
-          setUser({
-            id: session.user.id,
-            email: session.user.email || '',
-            name: session.user.email?.split('@')[0] || 'User',
-            role: 'operator',
-            created_at: new Date().toISOString(),
-          });
+        try {
+          console.log('[Auth] Fetching profile for:', session.user.id);
+          
+          // Таймаут 3 секунды на запрос профиля
+          const profilePromise = supabase
+            .from('users')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+          
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Profile fetch timeout')), 3000)
+          );
+          
+          const { data: profile, error } = await Promise.race([
+            profilePromise,
+            timeoutPromise
+          ]) as any;
+          
+          console.log('[Auth] Profile result:', { profile: !!profile, error: error?.message });
+          
+          if (profile && !error) {
+            setUser(profile as User);
+          } else {
+            console.log('[Auth] Using fallback user');
+            setUser(fallbackUser);
+          }
+        } catch (err) {
+          console.error('[Auth] Profile fetch error:', err);
+          setUser(fallbackUser);
         }
       } else {
         setUser(null);

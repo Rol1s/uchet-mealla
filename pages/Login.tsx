@@ -17,8 +17,10 @@ const Login: React.FC = () => {
 
   // Navigate when authenticated (after state updates)
   useEffect(() => {
+    console.log('[Login] isAuthenticated changed:', isAuthenticated);
     if (isAuthenticated) {
-      console.log('[Login] User authenticated, navigating to:', from);
+      console.log('[Login] Navigating to:', from);
+      setIsLoading(false);
       navigate(from, { replace: true });
     }
   }, [isAuthenticated, navigate, from]);
@@ -29,9 +31,12 @@ const Login: React.FC = () => {
     setIsLoading(true);
 
     try {
+      console.log('[Login] Calling signIn...');
       await signIn(email, password);
+      console.log('[Login] signIn completed, waiting for auth state...');
       // Navigation will happen via useEffect when isAuthenticated becomes true
     } catch (err) {
+      console.error('[Login] signIn error:', err);
       const message = err instanceof Error ? err.message : 'Ошибка входа';
       setError(message === 'Invalid login credentials' ? 'Неверный email или пароль' : message);
       setIsLoading(false);
