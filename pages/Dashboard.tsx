@@ -136,10 +136,10 @@ const Dashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 h-96">
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 h-96 min-h-[280px]">
           <h3 className="text-lg font-semibold text-slate-800 mb-4">Остатки по материалам (тонны)</h3>
           {materialDistribution.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minHeight={280}>
               <BarChart data={materialDistribution}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} />

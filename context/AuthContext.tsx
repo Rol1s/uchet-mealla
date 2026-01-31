@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { supabase } from '../services/supabase';
 import type { User } from '../types';
 
@@ -16,14 +16,18 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const profileCacheRef = useRef<{ userId: string; user: User } | null>(null);
 
   useEffect(() => {
-    // Подписка на события auth - по документации Supabase
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('[Auth] Event:', event, 'Session:', !!session);
-      
       if (session?.user) {
-        // Создаем fallback пользователя из сессии
+        const cached = profileCacheRef.current;
+        if (cached && cached.userId === session.user.id) {
+          setUser(cached.user);
+          setLoading(false);
+          return;
+        }
+
         const fallbackUser: User = {
           id: session.user.id,
           email: session.user.email || '',
@@ -31,48 +35,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           role: 'operator',
           created_at: new Date().toISOString(),
         };
-        
+
         try {
-          console.log('[Auth] Fetching profile for:', session.user.id);
-          
-          // Таймаут 10 секунд на запрос профиля
           const profilePromise = supabase
             .from('users')
             .select('*')
             .eq('id', session.user.id)
             .single();
-          
-          const timeoutPromise = new Promise((_, reject) => 
+          const timeoutPromise = new Promise((_, reject) =>
             setTimeout(() => reject(new Error('Profile fetch timeout')), 10000)
           );
-          
-          const { data: profile, error } = await Promise.race([
+          const { data: profile, error } = (await Promise.race([
             profilePromise,
-            timeoutPromise
-          ]) as any;
-          
-          console.log('[Auth] Profile result:', { profile: !!profile, error: error?.message });
-          
-          if (profile && !error) {
-            setUser(profile as User);
-          } else {
-            console.log('[Auth] Using fallback user');
-            setUser(fallbackUser);
-          }
-        } catch (err) {
-          console.error('[Auth] Profile fetch error:', err);
+            timeoutPromise,
+          ])) as { data: User | null; error: Error | null };
+
+          const resolved = profile && !error ? (profile as User) : fallbackUser;
+          profileCacheRef.current = { userId: session.user.id, user: resolved };
+          setUser(resolved);
+        } catch {
+          profileCacheRef.current = { userId: session.user.id, user: fallbackUser };
           setUser(fallbackUser);
         }
       } else {
+        profileCacheRef.current = null;
         setUser(null);
       }
-      
       setLoading(false);
     });
 
-    return () => {
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   const signIn = async (email: string, password: string) => {
