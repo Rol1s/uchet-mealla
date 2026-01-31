@@ -290,8 +290,9 @@ const Works: React.FC = () => {
                     type="number"
                     step="0.001"
                     required
+                    placeholder="Введите количество"
                     className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
-                    value={formState.quantity}
+                    value={formState.quantity || ''}
                     onChange={(e) =>
                       setFormState({ ...formState, quantity: parseFloat(e.target.value) || 0 })
                     }

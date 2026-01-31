@@ -171,7 +171,7 @@ const Inventory: React.FC = () => {
           >
             <option value="all">Все товары</option>
             <option value="own">Только наши</option>
-            <option value="client_storage">На хранении</option>
+            <option value="client_storage">Товар клиента</option>
           </select>
 
           <button

@@ -176,8 +176,9 @@ const Rates: React.FC = () => {
                       <td className="px-6 py-3">
                         <input
                           type="number"
+                          placeholder="Цена"
                           className="w-full border-slate-300 rounded p-1 text-sm border text-right focus:ring-1 focus:ring-blue-500"
-                          value={editForm.price ?? 0}
+                          value={editForm.price || ''}
                           onChange={(e) =>
                             setEditForm({ ...editForm, price: parseFloat(e.target.value) || 0 })
                           }

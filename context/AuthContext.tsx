@@ -35,7 +35,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
           console.log('[Auth] Fetching profile for:', session.user.id);
           
-          // Таймаут 3 секунды на запрос профиля
+          // Таймаут 10 секунд на запрос профиля
           const profilePromise = supabase
             .from('users')
             .select('*')
@@ -43,7 +43,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             .single();
           
           const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Profile fetch timeout')), 3000)
+            setTimeout(() => reject(new Error('Profile fetch timeout')), 10000)
           );
           
           const { data: profile, error } = await Promise.race([

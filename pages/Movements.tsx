@@ -345,7 +345,7 @@ const Movements: React.FC = () => {
                   }
                 >
                   <option value="own">Наш товар</option>
-                  <option value="client_storage">На хранении у клиента</option>
+                  <option value="client_storage">Товар клиента</option>
                 </select>
               </div>
               <div>
@@ -354,8 +354,9 @@ const Movements: React.FC = () => {
                   type="number"
                   step="0.001"
                   required
+                  placeholder="Введите вес"
                   className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
-                  value={formState.weight}
+                  value={formState.weight || ''}
                   onChange={(e) =>
                     setFormState({ ...formState, weight: parseFloat(e.target.value) || 0 })
                   }
@@ -367,8 +368,9 @@ const Movements: React.FC = () => {
                 </label>
                 <input
                   type="number"
+                  placeholder="Введите стоимость"
                   className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
-                  value={formState.cost}
+                  value={formState.cost || ''}
                   onChange={(e) =>
                     setFormState({ ...formState, cost: parseFloat(e.target.value) || 0 })
                   }
