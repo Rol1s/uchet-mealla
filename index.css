@@ -2,6 +2,22 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap');
 
+/* Mobile: safe area for notched phones */
+.safe-area-inset {
+  padding-left: env(safe-area-inset-left, 0);
+  padding-right: env(safe-area-inset-right, 0);
+}
+
+/* Touch-friendly minimum tap targets (44px) */
+@media (max-width: 1023px) {
+  button:not(.no-touch-target),
+  a[role="button"],
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
 /* Hide number input spinners */
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button {
@@ -19,12 +35,15 @@ input[type="number"] {
 /* Login Page Container */
 .login-page {
   min-height: 100vh;
+  min-height: 100dvh;
   background: #070707;
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: 'Open Sans', sans-serif;
   padding: 1rem;
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
 }
 
 /* Login Container with Animated Borders */
@@ -178,8 +197,9 @@ input[type="number"] {
   background-size: 200% 200%;
   animation: gradient-shift 3s ease infinite;
   border: none;
-  border-radius: 10px;
-  padding: 1rem;
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  min-height: 48px;
   color: white;
   font-size: 1rem;
   font-weight: 600;
