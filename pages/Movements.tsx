@@ -178,8 +178,67 @@ const Movements: React.FC = () => {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      {/* Mobile cards */}
+      <div className="md:hidden space-y-3">
+        {filteredMovements.length === 0 ? (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 text-center text-slate-400">
+            Нет записей. Добавьте первую операцию.
+          </div>
+        ) : (
+          filteredMovements.map((item) => (
+            <div
+              key={item.id}
+              className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 space-y-2"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <span className="text-sm font-medium text-slate-700">
+                  {new Date(item.movement_date).toLocaleDateString('ru-RU')}
+                </span>
+                <span
+                  className={`badge shrink-0 ${
+                    item.operation === 'income' ? 'badge-green' : 'badge-red'
+                  }`}
+                >
+                  {item.operation === 'income' ? 'Приход' : 'Расход'}
+                </span>
+              </div>
+              <div className="text-sm text-slate-600">
+                {item.position?.company?.name || '—'} · {item.position?.material?.name || '—'}
+              </div>
+              <div className="flex flex-wrap gap-2 text-sm">
+                <span className="text-slate-500">Размер: {item.position?.size || '—'}</span>
+                <span
+                  className={`badge ${
+                    item.position?.ownership === 'own' ? 'badge-blue' : 'badge-orange'
+                  }`}
+                >
+                  {item.position?.ownership === 'own' ? 'Наш' : 'Клиента'}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="font-medium text-slate-800">Вес: {item.weight} т</span>
+                <span className="text-slate-500">Стоимость: {item.cost || '—'}</span>
+              </div>
+              {item.note ? (
+                <p className="text-sm text-slate-500 truncate">{item.note}</p>
+              ) : null}
+              {(isAdmin || item.created_by === user?.id) && (
+                <button
+                  type="button"
+                  onClick={() => handleDelete(item.id, item.created_by)}
+                  className="mt-2 p-2 text-slate-400 hover:text-red-600 transition-colors touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-red-50"
+                  aria-label="Удалить"
+                >
+                  <Trash2 size={20} />
+                </button>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Table: desktop only */}
+      <div className="hidden md:block bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">

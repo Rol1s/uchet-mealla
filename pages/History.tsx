@@ -142,8 +142,55 @@ const History: React.FC = () => {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      {/* Mobile cards */}
+      <div className="md:hidden space-y-3">
+        {filteredLogs.length === 0 ? (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 text-center text-slate-400">
+            Нет записей в истории
+          </div>
+        ) : (
+          filteredLogs.map((log) => (
+            <div
+              key={log.id}
+              className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 space-y-2"
+            >
+              <div className="text-sm text-slate-500">
+                {new Date(log.created_at).toLocaleString('ru-RU', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </div>
+              <div className="flex flex-wrap gap-2 items-center">
+                <span className="font-medium text-slate-700">
+                  {TABLE_LABELS[log.table_name] || log.table_name}
+                </span>
+                <span className={`badge ${ACTION_LABELS[log.action]?.class || 'badge-gray'}`}>
+                  {ACTION_LABELS[log.action]?.label || log.action}
+                </span>
+              </div>
+              <div className="text-sm text-slate-600">
+                {log.user?.email || log.user_id?.slice(0, 8) || '—'}
+              </div>
+              {log.action !== 'insert' && (
+                <div className="text-xs text-slate-500 truncate">
+                  Было: {formatData(log.old_data)}
+                </div>
+              )}
+              {log.action !== 'delete' && (
+                <div className="text-xs text-slate-500 truncate">
+                  Стало: {formatData(log.new_data)}
+                </div>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Table: desktop only */}
+      <div className="hidden md:block bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">

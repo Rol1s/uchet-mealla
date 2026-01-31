@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../services/supabase';
 import type { User } from '../types';
 
@@ -16,18 +16,10 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const profileCacheRef = useRef<{ userId: string; user: User } | null>(null);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        const cached = profileCacheRef.current;
-        if (cached && cached.userId === session.user.id) {
-          setUser(cached.user);
-          setLoading(false);
-          return;
-        }
-
         const fallbackUser: User = {
           id: session.user.id,
           email: session.user.email || '',
@@ -43,22 +35,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             .eq('id', session.user.id)
             .single();
           const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Profile fetch timeout')), 10000)
+            setTimeout(() => reject(new Error('Profile fetch timeout')), 15000)
           );
-          const { data: profile, error } = (await Promise.race([
-            profilePromise,
-            timeoutPromise,
-          ])) as { data: User | null; error: Error | null };
+          const result = await Promise.race([profilePromise, timeoutPromise]) as { data: User | null; error: unknown };
+          const { data: profile, error } = result;
 
-          const resolved = profile && !error ? (profile as User) : fallbackUser;
-          profileCacheRef.current = { userId: session.user.id, user: resolved };
-          setUser(resolved);
+          if (profile && !error) {
+            setUser(profile as User);
+          } else {
+            setUser(fallbackUser);
+          }
         } catch {
-          profileCacheRef.current = { userId: session.user.id, user: fallbackUser };
           setUser(fallbackUser);
         }
       } else {
-        profileCacheRef.current = null;
         setUser(null);
       }
       setLoading(false);
@@ -74,13 +64,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
       throw error;
     }
-    // onAuthStateChange обработает остальное
   };
 
   const signOut = async () => {
     setLoading(true);
     await supabase.auth.signOut();
-    // onAuthStateChange обработает остальное
   };
 
   return (

@@ -125,7 +125,62 @@ const Works: React.FC = () => {
         </div>
       )}
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      {/* Mobile cards */}
+      <div className="md:hidden space-y-3">
+        {logs.length === 0 ? (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 text-center text-slate-400">
+            Нет записей о работах.
+          </div>
+        ) : (
+          <>
+            {logs.map((log) => (
+              <div
+                key={log.id}
+                className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 space-y-2"
+              >
+                <div className="text-sm font-medium text-slate-700">
+                  {new Date(log.work_date).toLocaleDateString('ru-RU')}
+                </div>
+                <div className="text-sm text-slate-600">
+                  {log.company?.name || '—'}
+                  {log.material?.name ? ` · ${log.material.name}` : ''}
+                </div>
+                <div className="text-sm font-medium text-slate-800">
+                  {log.service?.name || 'Неизвестная услуга'} ({log.service?.unit})
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-slate-600">
+                    Количество: {log.quantity} {log.service?.unit}
+                  </span>
+                  <span className="font-bold text-slate-800">
+                    {log.total_price.toLocaleString('ru-RU')} ₽
+                  </span>
+                </div>
+                {log.note ? (
+                  <p className="text-sm text-slate-500 truncate">{log.note}</p>
+                ) : null}
+                {(isAdmin || log.created_by === user?.id) && (
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(log.id, log.created_by)}
+                    className="mt-2 p-2 text-slate-400 hover:text-red-600 transition-colors touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-red-50"
+                    aria-label="Удалить"
+                  >
+                    <Trash2 size={20} />
+                  </button>
+                )}
+              </div>
+            ))}
+            <div className="bg-slate-50 rounded-xl border border-slate-200 p-4 flex justify-between items-center font-bold text-slate-800">
+              <span>ИТОГО:</span>
+              <span className="text-blue-700">{totalSum.toLocaleString('ru-RU')} ₽</span>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Table: desktop only */}
+      <div className="hidden md:block bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">

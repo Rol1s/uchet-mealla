@@ -195,7 +195,52 @@ const Inventory: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      {/* Mobile cards */}
+      <div className="md:hidden space-y-3">
+        {inventory.length === 0 ? (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 text-center text-slate-400">
+            Нет данных о движениях.
+          </div>
+        ) : (
+          <>
+            {inventory.map((item) => (
+              <div
+                key={item.id}
+                className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 space-y-2"
+              >
+                {isGroupedByCompany && (
+                  <div className="text-sm font-medium text-slate-700">{item.company}</div>
+                )}
+                <div className="text-sm font-medium text-slate-800">{item.material}</div>
+                <div className="flex flex-wrap gap-2 items-center">
+                  <span className="text-sm text-slate-600">Размер: {item.size}</span>
+                  <span
+                    className={`badge ${
+                      item.ownership === 'own' ? 'badge-blue' : 'badge-orange'
+                    }`}
+                  >
+                    {item.ownership === 'own' ? 'Наш' : 'Клиента'}
+                  </span>
+                </div>
+                <div
+                  className={`text-right font-bold text-lg ${
+                    item.balance < 0 ? 'text-red-600' : 'text-slate-800'
+                  }`}
+                >
+                  {item.balance.toFixed(3)} т
+                </div>
+              </div>
+            ))}
+            <div className="bg-slate-50 rounded-xl border border-slate-200 p-4 flex justify-between items-center font-bold text-slate-800">
+              <span>ИТОГО:</span>
+              <span>{totalBalance.toFixed(3)} т</span>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Table: desktop only */}
+      <div className="hidden md:block bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">

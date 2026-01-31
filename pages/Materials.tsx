@@ -132,102 +132,193 @@ const Materials: React.FC = () => {
         </div>
       )}
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <table className="w-full text-sm text-left">
-          <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
-            <tr>
-              <th className="px-6 py-4">Название</th>
-              <th className="px-6 py-4 text-center">Статус</th>
-              <th className="px-6 py-4 text-center w-32">Действия</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {materials.length === 0 ? (
-              <tr>
-                <td colSpan={3} className="px-6 py-8 text-center text-slate-400">
-                  Нет материалов. Добавьте первый.
-                </td>
-              </tr>
-            ) : (
-              materials.map((material) => (
-                <tr key={material.id} className="hover:bg-slate-50 group">
-                  {editingId === material.id ? (
-                    <>
-                      <td className="px-6 py-3">
-                        <input
-                          className="w-full border-slate-300 rounded p-2 text-sm border focus:ring-1 focus:ring-blue-500"
-                          value={editForm.name || ''}
-                          onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                          autoFocus
-                        />
-                      </td>
-                      <td className="px-6 py-3 text-center">
-                        <label className="inline-flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={editForm.active ?? true}
-                            onChange={(e) => setEditForm({ ...editForm, active: e.target.checked })}
-                            className="rounded border-slate-300"
-                          />
-                          <span className="text-sm text-slate-600">Активен</span>
-                        </label>
-                      </td>
-                      <td className="px-6 py-3">
-                        <div className="flex justify-center gap-2">
-                          <button
-                            onClick={saveEdit}
-                            className="text-green-600 hover:bg-green-50 p-2 rounded"
-                          >
-                            <Save size={16} />
-                          </button>
-                          <button
-                            onClick={() => setEditingId(null)}
-                            className="text-red-500 hover:bg-red-50 p-2 rounded"
-                          >
-                            <X size={16} />
-                          </button>
-                        </div>
-                      </td>
-                    </>
-                  ) : (
-                    <>
-                      <td className="px-6 py-3 font-medium text-slate-700">{material.name}</td>
-                      <td className="px-6 py-3 text-center">
-                        <span
-                          className={`badge ${material.active ? 'badge-green' : 'badge-gray'}`}
-                          onClick={() => isAdmin && toggleActive(material)}
-                          style={{ cursor: isAdmin ? 'pointer' : 'default' }}
-                        >
-                          {material.active ? 'Активен' : 'Неактивен'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-3 text-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <div className="flex justify-center gap-2">
-                          {isAdmin && (
-                            <>
-                              <button
-                                onClick={() => startEdit(material)}
-                                className="text-blue-500 hover:text-blue-700 p-1"
-                              >
-                                <Edit2 size={16} />
-                              </button>
-                              <button
-                                onClick={() => handleDelete(material.id)}
-                                className="text-slate-400 hover:text-red-600 p-1"
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </>
+      {/* Mobile cards */}
+      <div className="md:hidden space-y-3">
+        {materials.length === 0 ? (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 text-center text-slate-400">
+            Нет материалов. Добавьте первый.
+          </div>
+        ) : (
+          materials.map((material) => (
+            <div
+              key={material.id}
+              className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 space-y-3"
+            >
+              {editingId === material.id ? (
+                <>
+                  <input
+                    className="w-full border-slate-300 rounded-lg p-3 text-sm border focus:ring-2 focus:ring-blue-500"
+                    value={editForm.name || ''}
+                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                    placeholder="Название"
+                  />
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={editForm.active ?? true}
+                      onChange={(e) => setEditForm({ ...editForm, active: e.target.checked })}
+                      className="rounded border-slate-300"
+                    />
+                    <span className="text-sm text-slate-600">Активен</span>
+                  </label>
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={saveEdit}
+                      className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-green-600 text-white font-medium touch-manipulation min-h-[48px]"
+                    >
+                      <Save size={18} />
+                      Сохранить
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingId(null)}
+                      className="flex items-center justify-center p-3 rounded-xl border border-slate-300 text-slate-600 touch-manipulation min-h-[48px]"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium text-slate-800">{material.name}</div>
+                    <span
+                      className={`badge mt-1 inline-block ${material.active ? 'badge-green' : 'badge-gray'}`}
+                      onClick={() => isAdmin && toggleActive(material)}
+                      onKeyDown={(e) => isAdmin && e.key === 'Enter' && toggleActive(material)}
+                      role={isAdmin ? 'button' : undefined}
+                      tabIndex={isAdmin ? 0 : undefined}
+                    >
+                      {material.active ? 'Активен' : 'Неактивен'}
+                    </span>
+                  </div>
+                  {isAdmin && (
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => startEdit(material)}
+                        className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
+                        aria-label="Редактировать"
+                      >
+                        <Edit2 size={20} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(material.id)}
+                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
+                        aria-label="Удалить"
+                      >
+                        <Trash2 size={20} />
+                      </button>
+                    </div>
                   )}
+                </div>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Table: desktop only */}
+      <div className="hidden md:block bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+              <tr>
+                <th className="px-6 py-4">Название</th>
+                <th className="px-6 py-4 text-center">Статус</th>
+                <th className="px-6 py-4 text-center w-32">Действия</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {materials.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="px-6 py-8 text-center text-slate-400">
+                    Нет материалов. Добавьте первый.
+                  </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                materials.map((material) => (
+                  <tr key={material.id} className="hover:bg-slate-50 group">
+                    {editingId === material.id ? (
+                      <>
+                        <td className="px-6 py-3">
+                          <input
+                            className="w-full border-slate-300 rounded p-2 text-sm border focus:ring-1 focus:ring-blue-500"
+                            value={editForm.name || ''}
+                            onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                            autoFocus
+                          />
+                        </td>
+                        <td className="px-6 py-3 text-center">
+                          <label className="inline-flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={editForm.active ?? true}
+                              onChange={(e) => setEditForm({ ...editForm, active: e.target.checked })}
+                              className="rounded border-slate-300"
+                            />
+                            <span className="text-sm text-slate-600">Активен</span>
+                          </label>
+                        </td>
+                        <td className="px-6 py-3">
+                          <div className="flex justify-center gap-2">
+                            <button
+                              onClick={saveEdit}
+                              className="text-green-600 hover:bg-green-50 p-2 rounded"
+                            >
+                              <Save size={16} />
+                            </button>
+                            <button
+                              onClick={() => setEditingId(null)}
+                              className="text-red-500 hover:bg-red-50 p-2 rounded"
+                            >
+                              <X size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        <td className="px-6 py-3 font-medium text-slate-700">{material.name}</td>
+                        <td className="px-6 py-3 text-center">
+                          <span
+                            className={`badge ${material.active ? 'badge-green' : 'badge-gray'}`}
+                            onClick={() => isAdmin && toggleActive(material)}
+                            style={{ cursor: isAdmin ? 'pointer' : 'default' }}
+                          >
+                            {material.active ? 'Активен' : 'Неактивен'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-3 text-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex justify-center gap-2">
+                            {isAdmin && (
+                              <>
+                                <button
+                                  onClick={() => startEdit(material)}
+                                  className="text-blue-500 hover:text-blue-700 p-1"
+                                >
+                                  <Edit2 size={16} />
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(material.id)}
+                                  className="text-slate-400 hover:text-red-600 p-1"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </>
+                    )}
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

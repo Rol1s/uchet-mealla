@@ -14,6 +14,7 @@ import {
   HelpCircle,
   Menu,
   X,
+  MoreVertical,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -154,10 +155,68 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </span>
           </div>
         </header>
-        <div className="flex-1 overflow-y-auto p-4 lg:p-8 bg-slate-50">
-          <div className="max-w-7xl mx-auto pb-6 lg:pb-10">{children}</div>
+        <div className="flex-1 overflow-y-auto p-4 lg:p-8 bg-slate-50 pb-24 md:pb-6 lg:pb-10">
+          <div className="max-w-7xl mx-auto">{children}</div>
         </div>
       </main>
+
+      {/* Bottom nav: mobile only */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-slate-200 safe-area-inset pb-[env(safe-area-inset-bottom)]">
+        <div className="flex items-stretch justify-around h-16 min-h-[56px]">
+          <NavLink
+            to="/"
+            className={({ isActive }) =>
+              `flex flex-col items-center justify-center flex-1 min-w-0 py-2 text-xs font-medium transition-colors touch-manipulation min-h-[48px] ${
+                isActive ? 'text-blue-600' : 'text-slate-500'
+              }`
+            }
+          >
+            <LayoutDashboard size={22} className="flex-shrink-0 mb-0.5" />
+            <span>Главная</span>
+          </NavLink>
+          <NavLink
+            to="/movements"
+            className={({ isActive }) =>
+              `flex flex-col items-center justify-center flex-1 min-w-0 py-2 text-xs font-medium transition-colors touch-manipulation min-h-[48px] ${
+                isActive ? 'text-blue-600' : 'text-slate-500'
+              }`
+            }
+          >
+            <ArrowLeftRight size={22} className="flex-shrink-0 mb-0.5" />
+            <span>Движение</span>
+          </NavLink>
+          <NavLink
+            to="/inventory"
+            className={({ isActive }) =>
+              `flex flex-col items-center justify-center flex-1 min-w-0 py-2 text-xs font-medium transition-colors touch-manipulation min-h-[48px] ${
+                isActive ? 'text-blue-600' : 'text-slate-500'
+              }`
+            }
+          >
+            <Package size={22} className="flex-shrink-0 mb-0.5" />
+            <span>Остатки</span>
+          </NavLink>
+          <NavLink
+            to="/works"
+            className={({ isActive }) =>
+              `flex flex-col items-center justify-center flex-1 min-w-0 py-2 text-xs font-medium transition-colors touch-manipulation min-h-[48px] ${
+                isActive ? 'text-blue-600' : 'text-slate-500'
+              }`
+            }
+          >
+            <Hammer size={22} className="flex-shrink-0 mb-0.5" />
+            <span>Работы</span>
+          </NavLink>
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(true)}
+            className="flex flex-col items-center justify-center flex-1 min-w-0 py-2 text-xs font-medium text-slate-500 touch-manipulation min-h-[48px]"
+          >
+            <MoreVertical size={22} className="flex-shrink-0 mb-0.5" />
+            <span>Ещё</span>
+          </button>
+        </div>
+      </nav>
     </div>
   );
 };

@@ -130,124 +130,231 @@ const Rates: React.FC = () => {
         </div>
       )}
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <table className="w-full text-sm text-left">
-          <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
-            <tr>
-              <th className="px-6 py-4 w-2/5">Вид работ</th>
-              <th className="px-6 py-4 w-1/5">Ед. измерения</th>
-              <th className="px-6 py-4 w-1/5 text-right">Цена за ед. (руб)</th>
-              <th className="px-6 py-4 w-1/10 text-center">Статус</th>
-              <th className="px-6 py-4 w-20 text-center">Действия</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {rates.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-6 py-8 text-center text-slate-400">
-                  Нет тарифов. Добавьте первый.
-                </td>
-              </tr>
-            ) : (
-              rates.map((rate) => (
-                <tr key={rate.id} className="hover:bg-slate-50 group">
-                  {editingId === rate.id ? (
-                    <>
-                      <td className="px-6 py-3">
-                        <input
-                          className="w-full border-slate-300 rounded p-1 text-sm border focus:ring-1 focus:ring-blue-500"
-                          value={editForm.name || ''}
-                          onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                          autoFocus
-                        />
-                      </td>
-                      <td className="px-6 py-3">
-                        <select
-                          className="w-full border-slate-300 rounded p-1 text-sm border focus:ring-1 focus:ring-blue-500"
-                          value={editForm.unit || 'шт'}
-                          onChange={(e) => setEditForm({ ...editForm, unit: e.target.value })}
-                        >
-                          <option value="тн">тонна (тн)</option>
-                          <option value="шт">штука (шт)</option>
-                          <option value="м/п">пог. метр (м/п)</option>
-                          <option value="час">час</option>
-                        </select>
-                      </td>
-                      <td className="px-6 py-3">
-                        <input
-                          type="number"
-                          placeholder="Цена"
-                          className="w-full border-slate-300 rounded p-1 text-sm border text-right focus:ring-1 focus:ring-blue-500"
-                          value={editForm.price || ''}
-                          onChange={(e) =>
-                            setEditForm({ ...editForm, price: parseFloat(e.target.value) || 0 })
-                          }
-                        />
-                      </td>
-                      <td className="px-6 py-3 text-center">
-                        <label className="inline-flex items-center gap-1 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={editForm.active ?? true}
-                            onChange={(e) => setEditForm({ ...editForm, active: e.target.checked })}
-                            className="rounded border-slate-300"
-                          />
-                        </label>
-                      </td>
-                      <td className="px-6 py-3 flex justify-center gap-2">
-                        <button
-                          onClick={saveEdit}
-                          className="text-green-600 hover:bg-green-50 p-1 rounded"
-                        >
-                          <Save size={16} />
-                        </button>
-                        <button
-                          onClick={() => setEditingId(null)}
-                          className="text-red-500 hover:bg-red-50 p-1 rounded"
-                        >
-                          <X size={16} />
-                        </button>
-                      </td>
-                    </>
-                  ) : (
-                    <>
-                      <td className="px-6 py-3 font-medium text-slate-700">{rate.name}</td>
-                      <td className="px-6 py-3 text-slate-500">{rate.unit}</td>
-                      <td className="px-6 py-3 text-right font-mono text-slate-700">
-                        {(Number(rate.price) || 0).toLocaleString('ru-RU')}
-                      </td>
-                      <td className="px-6 py-3 text-center">
-                        <span className={`badge ${rate.active ? 'badge-green' : 'badge-gray'}`}>
-                          {rate.active ? 'Активен' : 'Неактивен'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-3 text-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <div className="flex justify-center gap-2">
-                          {isAdmin && (
-                            <>
-                              <button
-                                onClick={() => startEdit(rate)}
-                                className="text-blue-500 hover:text-blue-700"
-                              >
-                                <Edit2 size={16} />
-                              </button>
-                              <button
-                                onClick={() => handleDelete(rate.id)}
-                                className="text-slate-400 hover:text-red-600"
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </>
+      {/* Mobile cards */}
+      <div className="md:hidden space-y-3">
+        {rates.length === 0 ? (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 text-center text-slate-400">
+            Нет тарифов. Добавьте первый.
+          </div>
+        ) : (
+          rates.map((rate) => (
+            <div
+              key={rate.id}
+              className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 space-y-3"
+            >
+              {editingId === rate.id ? (
+                <>
+                  <input
+                    className="w-full border-slate-300 rounded-lg p-3 text-sm border focus:ring-2 focus:ring-blue-500"
+                    value={editForm.name || ''}
+                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                    placeholder="Вид работ"
+                  />
+                  <select
+                    className="w-full border-slate-300 rounded-lg p-3 text-sm border focus:ring-2 focus:ring-blue-500"
+                    value={editForm.unit || 'шт'}
+                    onChange={(e) => setEditForm({ ...editForm, unit: e.target.value })}
+                  >
+                    <option value="тн">тонна (тн)</option>
+                    <option value="шт">штука (шт)</option>
+                    <option value="м/п">пог. метр (м/п)</option>
+                    <option value="час">час</option>
+                  </select>
+                  <input
+                    type="number"
+                    placeholder="Цена"
+                    className="w-full border-slate-300 rounded-lg p-3 text-sm border focus:ring-2 focus:ring-blue-500"
+                    value={editForm.price || ''}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, price: parseFloat(e.target.value) || 0 })
+                    }
+                  />
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={editForm.active ?? true}
+                      onChange={(e) => setEditForm({ ...editForm, active: e.target.checked })}
+                      className="rounded border-slate-300"
+                    />
+                    <span className="text-sm text-slate-600">Активен</span>
+                  </label>
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={saveEdit}
+                      className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-green-600 text-white font-medium touch-manipulation min-h-[48px]"
+                    >
+                      <Save size={18} />
+                      Сохранить
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingId(null)}
+                      className="flex items-center justify-center p-3 rounded-xl border border-slate-300 text-slate-600 touch-manipulation min-h-[48px]"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="font-medium text-slate-800">{rate.name}</div>
+                    <div className="text-sm text-slate-600 mt-1">
+                      {(Number(rate.price) || 0).toLocaleString('ru-RU')} ₽ / {rate.unit}
+                    </div>
+                    <span className={`badge mt-2 inline-block ${rate.active ? 'badge-green' : 'badge-gray'}`}>
+                      {rate.active ? 'Активен' : 'Неактивен'}
+                    </span>
+                  </div>
+                  {isAdmin && (
+                    <div className="flex gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => startEdit(rate)}
+                        className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
+                        aria-label="Редактировать"
+                      >
+                        <Edit2 size={20} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(rate.id)}
+                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
+                        aria-label="Удалить"
+                      >
+                        <Trash2 size={20} />
+                      </button>
+                    </div>
                   )}
+                </div>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Table: desktop only */}
+      <div className="hidden md:block bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+              <tr>
+                <th className="px-6 py-4 w-2/5">Вид работ</th>
+                <th className="px-6 py-4 w-1/5">Ед. измерения</th>
+                <th className="px-6 py-4 w-1/5 text-right">Цена за ед. (руб)</th>
+                <th className="px-6 py-4 w-1/10 text-center">Статус</th>
+                <th className="px-6 py-4 w-20 text-center">Действия</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {rates.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-8 text-center text-slate-400">
+                    Нет тарифов. Добавьте первый.
+                  </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                rates.map((rate) => (
+                  <tr key={rate.id} className="hover:bg-slate-50 group">
+                    {editingId === rate.id ? (
+                      <>
+                        <td className="px-6 py-3">
+                          <input
+                            className="w-full border-slate-300 rounded p-1 text-sm border focus:ring-1 focus:ring-blue-500"
+                            value={editForm.name || ''}
+                            onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                            autoFocus
+                          />
+                        </td>
+                        <td className="px-6 py-3">
+                          <select
+                            className="w-full border-slate-300 rounded p-1 text-sm border focus:ring-1 focus:ring-blue-500"
+                            value={editForm.unit || 'шт'}
+                            onChange={(e) => setEditForm({ ...editForm, unit: e.target.value })}
+                          >
+                            <option value="тн">тонна (тн)</option>
+                            <option value="шт">штука (шт)</option>
+                            <option value="м/п">пог. метр (м/п)</option>
+                            <option value="час">час</option>
+                          </select>
+                        </td>
+                        <td className="px-6 py-3">
+                          <input
+                            type="number"
+                            placeholder="Цена"
+                            className="w-full border-slate-300 rounded p-1 text-sm border text-right focus:ring-1 focus:ring-blue-500"
+                            value={editForm.price || ''}
+                            onChange={(e) =>
+                              setEditForm({ ...editForm, price: parseFloat(e.target.value) || 0 })
+                            }
+                          />
+                        </td>
+                        <td className="px-6 py-3 text-center">
+                          <label className="inline-flex items-center gap-1 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={editForm.active ?? true}
+                              onChange={(e) => setEditForm({ ...editForm, active: e.target.checked })}
+                              className="rounded border-slate-300"
+                            />
+                          </label>
+                        </td>
+                        <td className="px-6 py-3 flex justify-center gap-2">
+                          <button
+                            onClick={saveEdit}
+                            className="text-green-600 hover:bg-green-50 p-1 rounded"
+                          >
+                            <Save size={16} />
+                          </button>
+                          <button
+                            onClick={() => setEditingId(null)}
+                            className="text-red-500 hover:bg-red-50 p-1 rounded"
+                          >
+                            <X size={16} />
+                          </button>
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        <td className="px-6 py-3 font-medium text-slate-700">{rate.name}</td>
+                        <td className="px-6 py-3 text-slate-500">{rate.unit}</td>
+                        <td className="px-6 py-3 text-right font-mono text-slate-700">
+                          {(Number(rate.price) || 0).toLocaleString('ru-RU')}
+                        </td>
+                        <td className="px-6 py-3 text-center">
+                          <span className={`badge ${rate.active ? 'badge-green' : 'badge-gray'}`}>
+                            {rate.active ? 'Активен' : 'Неактивен'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-3 text-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex justify-center gap-2">
+                            {isAdmin && (
+                              <>
+                                <button
+                                  onClick={() => startEdit(rate)}
+                                  className="text-blue-500 hover:text-blue-700"
+                                >
+                                  <Edit2 size={16} />
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(rate.id)}
+                                  className="text-slate-400 hover:text-red-600"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </>
+                    )}
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
