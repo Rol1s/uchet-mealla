@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Position, OwnershipType } from '../types';
-import { getPositions } from '../services/supabase';
+import { Position, Movement, OwnershipType } from '../types';
+import { getPositions, getMovements } from '../services/supabase';
 import { Download, Layers, Users, Loader2, Package } from 'lucide-react';
 
 const Inventory: React.FC = () => {
   const [positions, setPositions] = useState<Position[]>([]);
+  const [movements, setMovements] = useState<Movement[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isGroupedByCompany, setIsGroupedByCompany] = useState(false);
@@ -15,9 +16,10 @@ const Inventory: React.FC = () => {
     const loadData = async () => {
       try {
         setLoading(true);
-        const data = await getPositions();
+        const [posData, movData] = await Promise.all([getPositions(), getMovements()]);
         if (isMounted) {
-          setPositions(data);
+          setPositions(posData);
+          setMovements(movData);
           setError(null);
         }
       } catch (err) {
@@ -32,16 +34,29 @@ const Inventory: React.FC = () => {
     return () => { isMounted = false; };
   }, []);
 
+  // Avg purchase price per position_id
+  const avgPriceByPosition = useMemo(() => {
+    const map = new Map<string, { totalValue: number; totalWeight: number }>();
+    movements.filter((m) => m.operation === 'income').forEach((m) => {
+      if (!map.has(m.position_id)) map.set(m.position_id, { totalValue: 0, totalWeight: 0 });
+      const entry = map.get(m.position_id)!;
+      entry.totalValue += m.total_value || 0;
+      entry.totalWeight += m.weight;
+    });
+    const prices = new Map<string, number>();
+    map.forEach((v, k) => {
+      prices.set(k, v.totalWeight > 0 ? v.totalValue / v.totalWeight : 0);
+    });
+    return prices;
+  }, [movements]);
+
   const inventory = useMemo(() => {
-    // Filter by ownership
     let filtered = positions;
     if (ownershipFilter !== 'all') {
       filtered = positions.filter((p) => p.ownership === ownershipFilter);
     }
 
-    // Group if needed
     if (!isGroupedByCompany) {
-      // Merge positions by material + size (ignoring company)
       const map = new Map<
         string,
         {
@@ -51,6 +66,7 @@ const Inventory: React.FC = () => {
           size: string;
           ownership: OwnershipType;
           balance: number;
+          value: number;
         }
       >();
 
@@ -64,10 +80,13 @@ const Inventory: React.FC = () => {
             size: p.size,
             ownership: p.ownership,
             balance: 0,
+            value: 0,
           });
         }
         const item = map.get(key)!;
         item.balance += p.balance;
+        const avgPrice = avgPriceByPosition.get(p.id) || 0;
+        item.value += p.balance * avgPrice;
       });
 
       return Array.from(map.values()).sort((a, b) => {
@@ -77,16 +96,19 @@ const Inventory: React.FC = () => {
       });
     }
 
-    // Grouped by company
     return filtered
-      .map((p) => ({
-        id: p.id,
-        company: p.company?.name || 'Неизвестная',
-        material: p.material?.name || 'Неизвестный',
-        size: p.size,
-        ownership: p.ownership,
-        balance: p.balance,
-      }))
+      .map((p) => {
+        const avgPrice = avgPriceByPosition.get(p.id) || 0;
+        return {
+          id: p.id,
+          company: p.company?.name || 'Неизвестная',
+          material: p.material?.name || 'Неизвестный',
+          size: p.size,
+          ownership: p.ownership,
+          balance: p.balance,
+          value: p.balance * avgPrice,
+        };
+      })
       .sort((a, b) => {
         const compDiff = a.company.localeCompare(b.company);
         if (compDiff !== 0) return compDiff;
@@ -94,15 +116,16 @@ const Inventory: React.FC = () => {
         if (matDiff !== 0) return matDiff;
         return a.size.localeCompare(b.size);
       });
-  }, [positions, isGroupedByCompany, ownershipFilter]);
+  }, [positions, isGroupedByCompany, ownershipFilter, avgPriceByPosition]);
 
   const totalBalance = inventory.reduce((acc, i) => acc + i.balance, 0);
+  const totalValue = inventory.reduce((acc, i) => acc + i.value, 0);
 
   const handleExport = () => {
     // Simple CSV export
     const headers = isGroupedByCompany
-      ? ['Компания', 'Материал', 'Размер', 'Владение', 'Остаток']
-      : ['Материал', 'Размер', 'Владение', 'Остаток'];
+      ? ['Компания', 'Материал', 'Размер', 'Владение', 'Остаток', 'Стоимость']
+      : ['Материал', 'Размер', 'Владение', 'Остаток', 'Стоимость'];
 
     const rows = inventory.map((item) =>
       isGroupedByCompany
@@ -112,12 +135,14 @@ const Inventory: React.FC = () => {
             item.size,
             item.ownership === 'own' ? 'Наш' : 'Клиента',
             item.balance.toFixed(3),
+            item.value > 0 ? item.value.toFixed(0) : '',
           ]
         : [
             item.material,
             item.size,
             item.ownership === 'own' ? 'Наш' : 'Клиента',
             item.balance.toFixed(3),
+            item.value > 0 ? item.value.toFixed(0) : '',
           ]
     );
 
@@ -222,18 +247,32 @@ const Inventory: React.FC = () => {
                     {item.ownership === 'own' ? 'Наш' : 'Клиента'}
                   </span>
                 </div>
-                <div
-                  className={`text-right font-bold text-lg ${
-                    item.balance < 0 ? 'text-red-600' : 'text-slate-800'
-                  }`}
-                >
-                  {item.balance.toFixed(3)} т
+                <div className="flex justify-between items-end">
+                  <div
+                    className={`font-bold text-lg ${
+                      item.balance < 0 ? 'text-red-600' : 'text-slate-800'
+                    }`}
+                  >
+                    {item.balance.toFixed(3)} т
+                  </div>
+                  {item.value > 0 && (
+                    <div className="text-sm font-medium text-blue-700">
+                      {item.value.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
             <div className="bg-slate-50 rounded-xl border border-slate-200 p-4 flex justify-between items-center font-bold text-slate-800">
               <span>ИТОГО:</span>
-              <span>{totalBalance.toFixed(3)} т</span>
+              <div className="text-right">
+                <div>{totalBalance.toFixed(3)} т</div>
+                {totalValue > 0 && (
+                  <div className="text-sm text-blue-700">
+                    {totalValue.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽
+                  </div>
+                )}
+              </div>
             </div>
           </>
         )}
@@ -254,13 +293,16 @@ const Inventory: React.FC = () => {
                 <th className="px-6 py-4 text-right font-bold bg-blue-50/50 whitespace-nowrap">
                   Остаток (т)
                 </th>
+                <th className="px-6 py-4 text-right whitespace-nowrap">
+                  Стоимость (₽)
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {inventory.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={isGroupedByCompany ? 5 : 4}
+                    colSpan={isGroupedByCompany ? 6 : 5}
                     className="px-6 py-8 text-center text-slate-400"
                   >
                     Нет данных о движениях.
@@ -290,6 +332,9 @@ const Inventory: React.FC = () => {
                     >
                       {item.balance.toFixed(3)}
                     </td>
+                    <td className="px-6 py-3 text-right text-slate-600">
+                      {item.value > 0 ? item.value.toLocaleString('ru-RU', { maximumFractionDigits: 0 }) : '—'}
+                    </td>
                   </tr>
                 ))
               )}
@@ -303,6 +348,9 @@ const Inventory: React.FC = () => {
                   ИТОГО:
                 </td>
                 <td className="px-6 py-3 text-right">{totalBalance.toFixed(3)}</td>
+                <td className="px-6 py-3 text-right text-blue-700">
+                  {totalValue > 0 ? totalValue.toLocaleString('ru-RU', { maximumFractionDigits: 0 }) : '—'}
+                </td>
               </tr>
             </tfoot>
           </table>

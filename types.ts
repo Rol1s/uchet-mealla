@@ -64,6 +64,8 @@ export interface Movement {
   operation: OperationType;
   weight: number;
   cost: number;
+  price_per_ton: number;
+  total_value: number;
   note: string | null;
   movement_date: string;
   created_by: string | null;
@@ -118,6 +120,23 @@ export interface InventoryItem {
   balance: number;
 }
 
+// === Expense ===
+export type ExpenseCategory = 'transport' | 'loading' | 'processing' | 'rent_salary' | 'other';
+
+export interface Expense {
+  id: string;
+  expense_date: string;
+  category: ExpenseCategory;
+  description: string;
+  amount: number;
+  company_id: string | null;
+  note: string | null;
+  created_by: string | null;
+  created_at: string;
+  // Joined fields
+  company?: Company;
+}
+
 // === Form Input Types ===
 export interface MovementInput {
   company_id: string;
@@ -127,8 +146,18 @@ export interface MovementInput {
   operation: OperationType;
   weight: number;
   cost: number;
+  price_per_ton: number;
   note: string;
   movement_date: string;
+}
+
+export interface ExpenseInput {
+  expense_date: string;
+  category: ExpenseCategory;
+  description: string;
+  amount: number;
+  company_id: string | null;
+  note: string;
 }
 
 export interface WorkLogInput {

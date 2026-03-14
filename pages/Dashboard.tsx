@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Movement, WorkLog, Position } from '../types';
-import { getMovements, getWorkLogs, getPositions } from '../services/supabase';
-import { Package, ArrowDownLeft, ArrowUpRight, Coins, Loader2 } from 'lucide-react';
+import { Movement, WorkLog, Position, Expense } from '../types';
+import { getMovements, getWorkLogs, getPositions, getExpenses } from '../services/supabase';
+import { Package, ArrowDownLeft, ArrowUpRight, TrendingUp, Loader2, ShoppingCart, Truck } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 const Dashboard: React.FC = () => {
   const [movements, setMovements] = useState<Movement[]>([]);
   const [workLogs, setWorkLogs] = useState<WorkLog[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -16,15 +17,17 @@ const Dashboard: React.FC = () => {
     const loadData = async () => {
       try {
         setLoading(true);
-        const [movementsData, workLogsData, positionsData] = await Promise.all([
+        const [movementsData, workLogsData, positionsData, expensesData] = await Promise.all([
           getMovements(),
           getWorkLogs(),
           getPositions(),
+          getExpenses(),
         ]);
         if (isMounted) {
           setMovements(movementsData);
           setWorkLogs(workLogsData);
           setPositions(positionsData);
+          setExpenses(expensesData);
           setError(null);
         }
       } catch (err) {
@@ -50,10 +53,20 @@ const Dashboard: React.FC = () => {
 
     const currentStock = positions.reduce((acc, p) => acc + p.balance, 0);
 
-    const totalWorkValue = workLogs.reduce((acc, curr) => acc + curr.total_price, 0);
+    const totalPurchasesValue = movements
+      .filter((m) => m.operation === 'income')
+      .reduce((acc, m) => acc + (m.total_value || 0), 0);
 
-    return { totalIncome, totalExpense, currentStock, totalWorkValue };
-  }, [movements, workLogs, positions]);
+    const totalSalesValue = movements
+      .filter((m) => m.operation === 'expense')
+      .reduce((acc, m) => acc + (m.total_value || 0), 0);
+
+    const totalExpensesValue = expenses.reduce((acc, e) => acc + e.amount, 0);
+
+    const profit = totalSalesValue - totalPurchasesValue - totalExpensesValue;
+
+    return { totalIncome, totalExpense, currentStock, totalPurchasesValue, totalSalesValue, totalExpensesValue, profit };
+  }, [movements, expenses, positions]);
 
   // Data for chart - group by material
   const materialDistribution = useMemo(() => {
@@ -91,45 +104,86 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      {/* Weight stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
         <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4">
           <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
             <Package size={24} />
           </div>
           <div>
-            <p className="text-sm text-slate-500 font-medium">Текущий остаток</p>
+            <p className="text-sm text-slate-500 font-medium">Остаток на складе</p>
             <h3 className="text-xl sm:text-2xl font-bold text-slate-800">{stats.currentStock.toFixed(3)} т</h3>
           </div>
         </div>
-
         <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4">
           <div className="p-3 bg-green-50 text-green-600 rounded-lg">
             <ArrowDownLeft size={24} />
           </div>
           <div>
-            <p className="text-sm text-slate-500 font-medium">Всего приход</p>
+            <p className="text-sm text-slate-500 font-medium">Приход (вес)</p>
             <h3 className="text-xl sm:text-2xl font-bold text-slate-800">{stats.totalIncome.toFixed(3)} т</h3>
           </div>
         </div>
-
         <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4">
           <div className="p-3 bg-red-50 text-red-600 rounded-lg">
             <ArrowUpRight size={24} />
           </div>
           <div>
-            <p className="text-sm text-slate-500 font-medium">Всего расход</p>
+            <p className="text-sm text-slate-500 font-medium">Расход (вес)</p>
             <h3 className="text-xl sm:text-2xl font-bold text-slate-800">{stats.totalExpense.toFixed(3)} т</h3>
           </div>
         </div>
+      </div>
 
+      {/* Financial stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4">
-          <div className="p-3 bg-indigo-50 text-indigo-600 rounded-lg">
-            <Coins size={24} />
+          <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
+            <ShoppingCart size={24} />
           </div>
           <div>
-            <p className="text-sm text-slate-500 font-medium">Сумма работ</p>
+            <p className="text-sm text-slate-500 font-medium">Закупки</p>
             <h3 className="text-xl sm:text-2xl font-bold text-slate-800">
-              {stats.totalWorkValue.toLocaleString('ru-RU')} ₽
+              {stats.totalPurchasesValue.toLocaleString('ru-RU')} ₽
+            </h3>
+          </div>
+        </div>
+        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4">
+          <div className="p-3 bg-green-50 text-green-600 rounded-lg">
+            <TrendingUp size={24} />
+          </div>
+          <div>
+            <p className="text-sm text-slate-500 font-medium">Продажи</p>
+            <h3 className="text-xl sm:text-2xl font-bold text-slate-800">
+              {stats.totalSalesValue.toLocaleString('ru-RU')} ₽
+            </h3>
+          </div>
+        </div>
+        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4">
+          <div className="p-3 bg-red-50 text-red-600 rounded-lg">
+            <Truck size={24} />
+          </div>
+          <div>
+            <p className="text-sm text-slate-500 font-medium">Расходы</p>
+            <h3 className="text-xl sm:text-2xl font-bold text-slate-800">
+              {stats.totalExpensesValue.toLocaleString('ru-RU')} ₽
+            </h3>
+          </div>
+        </div>
+        <div className={`p-4 sm:p-6 rounded-xl shadow-sm border flex items-center gap-4 ${
+          stats.profit >= 0 ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'
+        }`}>
+          <div className={`p-3 rounded-lg ${
+            stats.profit >= 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+          }`}>
+            <TrendingUp size={24} />
+          </div>
+          <div>
+            <p className={`text-sm font-medium ${stats.profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+              Прибыль
+            </p>
+            <h3 className={`text-xl sm:text-2xl font-bold ${stats.profit >= 0 ? 'text-emerald-800' : 'text-red-800'}`}>
+              {stats.profit.toLocaleString('ru-RU')} ₽
             </h3>
           </div>
         </div>
@@ -167,22 +221,14 @@ const Dashboard: React.FC = () => {
         </div>
 
         <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-6 sm:p-8 text-white flex flex-col justify-center">
-          <h3 className="text-xl sm:text-2xl font-bold mb-2">Добро пожаловать в MetalTrack</h3>
+          <h3 className="text-xl sm:text-2xl font-bold mb-2">MetalTrack Pro</h3>
           <div className="text-slate-300 mb-6">
             <p className="mb-2">Используйте меню слева для навигации.</p>
             <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
-              <li>
-                Вкладка <strong>"Движение"</strong> для учета прихода/расхода.
-              </li>
-              <li>
-                Вкладка <strong>"Остатки"</strong> формируется автоматически.
-              </li>
-              <li>
-                Вкладка <strong>"Тарифы"</strong> для настройки цен на работы.
-              </li>
-              <li>
-                Вкладки <strong>"Компании"</strong> и <strong>"Материалы"</strong> — справочники.
-              </li>
+              <li><strong>"Движение"</strong> — учет прихода/расхода металла с ценами</li>
+              <li><strong>"Остатки"</strong> — автоматический остаток на складе</li>
+              <li><strong>"Расходы"</strong> — транспорт, погрузка, обработка, аренда</li>
+              <li><strong>"Деньги"</strong> — финансовая сводка и прибыль по компаниям</li>
             </ul>
           </div>
         </div>

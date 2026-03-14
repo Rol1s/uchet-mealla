@@ -15,6 +15,8 @@ import {
   Menu,
   X,
   MoreVertical,
+  Receipt,
+  Banknote,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -30,6 +32,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { to: '/', label: 'Главная', icon: LayoutDashboard },
     { to: '/movements', label: 'Движение', icon: ArrowLeftRight },
     { to: '/inventory', label: 'Остатки', icon: Package },
+    { to: '/expenses', label: 'Расходы', icon: Receipt },
+    { to: '/money', label: 'Деньги', icon: Banknote },
     { to: '/works', label: 'Работы', icon: Hammer },
     { to: '/companies', label: 'Компании', icon: Building2 },
     { to: '/materials', label: 'Материалы', icon: Boxes },
@@ -197,15 +201,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <span>Остатки</span>
           </NavLink>
           <NavLink
-            to="/works"
+            to="/money"
             className={({ isActive }) =>
               `flex flex-col items-center justify-center flex-1 min-w-0 py-2 text-xs font-medium transition-colors touch-manipulation min-h-[48px] ${
                 isActive ? 'text-blue-600' : 'text-slate-500'
               }`
             }
           >
-            <Hammer size={22} className="flex-shrink-0 mb-0.5" />
-            <span>Работы</span>
+            <Banknote size={22} className="flex-shrink-0 mb-0.5" />
+            <span>Деньги</span>
           </NavLink>
           <button
             type="button"

@@ -12,6 +12,7 @@ const ACTION_LABELS: Record<string, { label: string; class: string }> = {
 const TABLE_LABELS: Record<string, string> = {
   movements: 'Движения',
   work_logs: 'Работы',
+  expenses: 'Расходы',
   positions: 'Позиции',
   companies: 'Компании',
   materials: 'Материалы',

@@ -11,6 +11,8 @@ import Rates from './pages/Rates';
 import Works from './pages/Works';
 import Companies from './pages/Companies';
 import Materials from './pages/Materials';
+import Expenses from './pages/Expenses';
+import Money from './pages/Money';
 import History from './pages/History';
 import Help from './pages/Help';
 
@@ -69,6 +71,26 @@ const App: React.FC = () => {
               <AuthGuard>
                 <Layout>
                   <Works />
+                </Layout>
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/expenses"
+            element={
+              <AuthGuard>
+                <Layout>
+                  <Expenses />
+                </Layout>
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/money"
+            element={
+              <AuthGuard>
+                <Layout>
+                  <Money />
                 </Layout>
               </AuthGuard>
             }

@@ -25,6 +25,7 @@ const Movements: React.FC = () => {
     ownership: 'own',
     weight: 0,
     cost: 0,
+    price_per_ton: 0,
     note: '',
   });
 
@@ -92,8 +93,7 @@ const Movements: React.FC = () => {
       const newMovement = await createMovement(formState);
       setMovements((prev) => [newMovement, ...prev]);
       setIsModalOpen(false);
-      // Reset form
-      setFormState((prev) => ({ ...prev, size: '', weight: 0, cost: 0, note: '' }));
+      setFormState((prev) => ({ ...prev, size: '', weight: 0, cost: 0, price_per_ton: 0, note: '' }));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка создания записи');
     } finally {
@@ -217,7 +217,15 @@ const Movements: React.FC = () => {
               </div>
               <div className="flex justify-between items-center text-sm">
                 <span className="font-medium text-slate-800">Вес: {item.weight} т</span>
-                <span className="text-slate-500">Стоимость: {item.cost || '—'}</span>
+                {item.price_per_ton ? (
+                  <span className="text-slate-500">{item.price_per_ton.toLocaleString('ru-RU')} ₽/т</span>
+                ) : null}
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="font-bold text-slate-800">
+                  {item.total_value ? `Сумма: ${item.total_value.toLocaleString('ru-RU')} ₽` : ''}
+                </span>
+                <span className="text-slate-400">{item.cost ? `Погр./Разгр.: ${item.cost}` : ''}</span>
               </div>
               {item.note ? (
                 <p className="text-sm text-slate-500 truncate">{item.note}</p>
@@ -250,6 +258,8 @@ const Movements: React.FC = () => {
                 <th className="px-6 py-4 whitespace-nowrap">Размер</th>
                 <th className="px-6 py-4 whitespace-nowrap">Владение</th>
                 <th className="px-6 py-4 text-right whitespace-nowrap">Вес (т)</th>
+                <th className="px-6 py-4 text-right whitespace-nowrap">Цена/т (₽)</th>
+                <th className="px-6 py-4 text-right whitespace-nowrap bg-blue-50/50">Сумма (₽)</th>
                 <th className="px-6 py-4 text-right whitespace-nowrap">Погр./Разгр.</th>
                 <th className="px-6 py-4 whitespace-nowrap">Примечание</th>
                 <th className="px-6 py-4 text-center">Действия</th>
@@ -258,7 +268,7 @@ const Movements: React.FC = () => {
             <tbody className="divide-y divide-slate-100">
               {filteredMovements.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="px-6 py-8 text-center text-slate-400">
+                  <td colSpan={12} className="px-6 py-8 text-center text-slate-400">
                     Нет записей. Добавьте первую операцию.
                   </td>
                 </tr>
@@ -292,6 +302,12 @@ const Movements: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-3 text-right font-medium">{item.weight}</td>
+                    <td className="px-6 py-3 text-right text-slate-500">
+                      {item.price_per_ton ? item.price_per_ton.toLocaleString('ru-RU') : '—'}
+                    </td>
+                    <td className="px-6 py-3 text-right font-bold bg-blue-50/30 text-slate-800">
+                      {item.total_value ? item.total_value.toLocaleString('ru-RU') : '—'}
+                    </td>
                     <td className="px-6 py-3 text-right text-slate-500">{item.cost || '—'}</td>
                     <td className="px-6 py-3 text-slate-500 truncate max-w-xs">{item.note}</td>
                     <td className="px-6 py-3 text-center">
@@ -423,6 +439,25 @@ const Movements: React.FC = () => {
                     setFormState({ ...formState, weight: parseFloat(e.target.value) || 0 })
                   }
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Цена за тонну (₽)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  placeholder="Цена за тонну"
+                  className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
+                  value={formState.price_per_ton || ''}
+                  onChange={(e) =>
+                    setFormState({ ...formState, price_per_ton: parseFloat(e.target.value) || 0 })
+                  }
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Сумма сделки</label>
+                <div className="w-full bg-slate-100 rounded-lg p-2 border border-slate-200 text-slate-700 font-mono">
+                  {((formState.weight || 0) * (formState.price_per_ton || 0)).toLocaleString('ru-RU')} ₽
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">

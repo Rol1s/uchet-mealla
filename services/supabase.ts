@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { User, Company, Material, ServiceRate, Position, Movement, WorkLog, AuditLog, MovementInput, WorkLogInput, OwnershipType } from '../types';
+import { User, Company, Material, ServiceRate, Position, Movement, WorkLog, AuditLog, MovementInput, WorkLogInput, OwnershipType, Expense, ExpenseInput } from '../types';
 
 // Supabase configuration — нормализуем URL (на случай дублирования в секретах)
 const rawUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim() || 'https://gbgfezeaaawfwhhlocsz.supabase.co';
@@ -264,6 +264,7 @@ export async function createMovement(input: MovementInput): Promise<Movement> {
 
   // 2. Insert movement
   const { data: { user } } = await supabase.auth.getUser();
+  const totalValue = input.weight * (input.price_per_ton || 0);
   const { data: movement, error: movementError } = await supabase
     .from('movements')
     .insert({
@@ -271,6 +272,8 @@ export async function createMovement(input: MovementInput): Promise<Movement> {
       operation: input.operation,
       weight: input.weight,
       cost: input.cost,
+      price_per_ton: input.price_per_ton || 0,
+      total_value: totalValue,
       note: input.note || null,
       movement_date: input.movement_date,
       created_by: user?.id,
@@ -345,6 +348,48 @@ export async function createWorkLog(input: WorkLogInput, pricePerUnit: number): 
 
 export async function deleteWorkLog(id: string): Promise<void> {
   const { error } = await supabase.from('work_logs').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// === Expenses ===
+
+export async function getExpenses(): Promise<Expense[]> {
+  const { data, error } = await supabase
+    .from('expenses')
+    .select(`
+      *,
+      company:companies(*),
+      user:users(name, email)
+    `)
+    .order('expense_date', { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function createExpense(input: ExpenseInput): Promise<Expense> {
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data, error } = await supabase
+    .from('expenses')
+    .insert({
+      expense_date: input.expense_date,
+      category: input.category,
+      description: input.description,
+      amount: input.amount,
+      company_id: input.company_id || null,
+      note: input.note || null,
+      created_by: user?.id,
+    })
+    .select(`
+      *,
+      company:companies(*)
+    `)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteExpense(id: string): Promise<void> {
+  const { error } = await supabase.from('expenses').delete().eq('id', id);
   if (error) throw error;
 }
 
