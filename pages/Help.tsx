@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import {
   BookOpen,
   ChevronDown,
+  ChevronRight,
   LogIn,
   Users,
   LayoutDashboard,
@@ -19,6 +20,11 @@ import {
   Trash2,
   HelpCircle,
   Search,
+  Rocket,
+  CheckCircle2,
+  Circle,
+  Eye,
+  ArrowRight,
 } from 'lucide-react';
 
 interface SectionProps {
@@ -116,9 +122,294 @@ const CodeBlock: React.FC<{ children: string }> = ({ children }) => (
   </pre>
 );
 
+interface OnboardingStepData {
+  title: string;
+  where: string;
+  action: string;
+  fields?: { label: string; value: string }[];
+  result: string;
+  tip?: string;
+}
+
+const ONBOARDING_STEPS: OnboardingStepData[] = [
+  {
+    title: 'Смотрим Главную',
+    where: 'Главная (открывается после входа)',
+    action: 'Просто посмотри. Если система пустая — все цифры будут нулевые. Это нормально, сейчас наполним.',
+    result: 'Ты видишь карточки: остаток, приход, расход, закупки, продажи, расходы, прибыль. Все нули. Скоро заполнятся.',
+  },
+  {
+    title: 'Покупаем металл (первый приход)',
+    where: 'Боковое меню → Движение → кнопка «Добавить запись»',
+    action: 'Заполни форму — представим, что мы купили трубу у Энергоинвеста.',
+    fields: [
+      { label: 'Дата', value: 'Сегодня (оставь как есть)' },
+      { label: 'Операция', value: 'Приход' },
+      { label: 'Компания', value: 'Энергоинвест' },
+      { label: 'Материал', value: 'Труба' },
+      { label: 'Размер', value: '530x6' },
+      { label: 'Владение', value: 'Наш товар' },
+      { label: 'Вес', value: '10' },
+      { label: 'Цена за тонну', value: '55000' },
+    ],
+    result: 'Запись появилась в таблице. Сумма сделки: 10 x 55 000 = 550 000 руб. Автоматически создалась позиция на складе: Труба 530x6 — 10 тонн.',
+    tip: 'Зайди в «Остатки» — увидишь 10 тонн трубы 530x6 стоимостью 550 000 руб.',
+  },
+  {
+    title: 'Покупаем ещё (другая цена)',
+    where: 'Движение → кнопка «Добавить запись»',
+    action: 'Ещё одна закупка трубы, но по другой цене — чтобы увидеть, как работает средняя цена.',
+    fields: [
+      { label: 'Операция', value: 'Приход' },
+      { label: 'Компания', value: 'Энергоинвест' },
+      { label: 'Материал', value: 'Труба' },
+      { label: 'Размер', value: '530x6' },
+      { label: 'Владение', value: 'Наш товар' },
+      { label: 'Вес', value: '5' },
+      { label: 'Цена за тонну', value: '60000' },
+    ],
+    result: 'Теперь на складе 15 тонн. Средняя цена: (550 000 + 300 000) / 15 = 56 667 руб/т. Стоимость остатка: 850 000 руб.',
+    tip: 'В «Остатках» одна строка «Труба 530x6» — 15 тонн, стоимость 850 000 руб.',
+  },
+  {
+    title: 'Продаём часть (первый расход)',
+    where: 'Движение → кнопка «Добавить запись»',
+    action: 'Продаём 7 тонн трубы компании «Никамет» по 70 000 руб/т.',
+    fields: [
+      { label: 'Операция', value: 'Расход' },
+      { label: 'Компания', value: 'Никамет' },
+      { label: 'Материал', value: 'Труба' },
+      { label: 'Размер', value: '530x6' },
+      { label: 'Владение', value: 'Наш товар' },
+      { label: 'Вес', value: '7' },
+      { label: 'Цена за тонну', value: '70000' },
+    ],
+    result: 'Сумма продажи: 7 x 70 000 = 490 000 руб. Остаток на складе: 15 - 7 = 8 тонн. Стоимость остатка: 8 x 56 667 = 453 333 руб.',
+  },
+  {
+    title: 'Записываем расход (доставка)',
+    where: 'Боковое меню → Расходы → кнопка «Добавить расход»',
+    action: 'Заплатили за доставку трубы. Запишем.',
+    fields: [
+      { label: 'Дата', value: 'Сегодня' },
+      { label: 'Категория', value: 'Транспорт' },
+      { label: 'Описание', value: 'Доставка трубы 530 из Челябинска' },
+      { label: 'Сумма', value: '25000' },
+      { label: 'Компания', value: 'Энергоинвест (не обязательно)' },
+    ],
+    result: 'Расход 25 000 руб записан. Теперь он учтётся в формуле прибыли.',
+  },
+  {
+    title: 'Записываем работу (резка)',
+    where: 'Боковое меню → Работы → кнопка «Добавить работу»',
+    action: 'Нарезали трубу для Никамета. Тариф «Резка газом» — 1 500 руб/т, нарезали 7 тонн.',
+    fields: [
+      { label: 'Дата', value: 'Сегодня' },
+      { label: 'Компания', value: 'Никамет' },
+      { label: 'Вид работ', value: 'Резка газом' },
+      { label: 'Количество', value: '7' },
+    ],
+    result: 'Сумма: 7 x 1 500 = 10 500 руб. Работа записана.',
+    tip: 'Работы учитываются отдельно от расходов. Это выручка за услугу, а не затрата.',
+  },
+  {
+    title: 'Смотрим результат — Деньги',
+    where: 'Боковое меню → Деньги',
+    action: 'Просто открой и посмотри. Ничего вводить не надо.',
+    result: 'Закупки: 850 000 руб (10т x 55 000 + 5т x 60 000). Продажи: 490 000 руб (7т x 70 000). Расходы: 25 000 руб. Прибыль: 490 000 - 850 000 - 25 000 = -385 000 руб (минус, потому что мы купили больше, чем продали — на складе ещё 8 тонн).',
+    tip: 'В таблице «По компаниям» видно: Энергоинвест — закупки 850 000, остаток 8 тонн. Никамет — продажи 490 000.',
+  },
+  {
+    title: 'Смотрим результат — Главная',
+    where: 'Боковое меню → Главная',
+    action: 'Вернись на главную — все карточки теперь заполнены.',
+    result: 'Остаток: 8 тонн. Приход: 15 тонн. Расход: 7 тонн. Закупки: 850 000. Продажи: 490 000. Расходы: 25 000. Прибыль: -385 000. График показывает трубу — 8 тонн.',
+    tip: 'Прибыль отрицательная — это нормально для начала. Когда продашь ещё, она вырастет.',
+  },
+];
+
+const Onboarding: React.FC = () => {
+  const [currentStep, setCurrentStep] = useState(0);
+  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
+
+  const toggleComplete = (idx: number) => {
+    setCompletedSteps((prev) => {
+      const next = new Set(prev);
+      if (next.has(idx)) next.delete(idx);
+      else next.add(idx);
+      return next;
+    });
+  };
+
+  const step = ONBOARDING_STEPS[currentStep];
+
+  return (
+    <div className="space-y-4">
+      {/* Scenario intro */}
+      <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl p-5 text-white">
+        <h3 className="text-lg font-bold flex items-center gap-2">
+          <Rocket size={22} />
+          Делаем вместе: первый рабочий день
+        </h3>
+        <p className="text-blue-100 text-sm mt-2">
+          Пройди 8 шагов — и ты будешь уверенно работать в системе. Представим реальный сценарий: покупка металла, продажа, расходы, работы. С конкретными цифрами. Просто повторяй за инструкцией.
+        </p>
+        <div className="flex items-center gap-2 mt-3">
+          <div className="text-xs text-blue-200">Прогресс:</div>
+          <div className="flex-1 h-2 bg-blue-900/50 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-white/80 rounded-full transition-all duration-300"
+              style={{ width: `${(completedSteps.size / ONBOARDING_STEPS.length) * 100}%` }}
+            />
+          </div>
+          <div className="text-xs text-blue-200 font-semibold">{completedSteps.size}/{ONBOARDING_STEPS.length}</div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4">
+        {/* Step list */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-3 lg:sticky lg:top-4 self-start">
+          <p className="text-xs font-semibold text-slate-500 uppercase px-2 mb-2">Шаги</p>
+          {ONBOARDING_STEPS.map((s, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => setCurrentStep(idx)}
+              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left text-sm transition-colors ${
+                idx === currentStep
+                  ? 'bg-blue-50 text-blue-700 font-semibold'
+                  : 'text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              {completedSteps.has(idx) ? (
+                <CheckCircle2 size={16} className="text-green-500 flex-shrink-0" />
+              ) : (
+                <Circle size={16} className={`flex-shrink-0 ${idx === currentStep ? 'text-blue-500' : 'text-slate-300'}`} />
+              )}
+              <span className="truncate">{idx + 1}. {s.title}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Step detail */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          {/* Step header */}
+          <div className="bg-slate-50 border-b border-slate-200 px-5 py-4 flex items-center justify-between">
+            <div>
+              <div className="text-xs font-semibold text-blue-600 uppercase">Шаг {currentStep + 1} из {ONBOARDING_STEPS.length}</div>
+              <h3 className="text-lg font-bold text-slate-800 mt-0.5">{step.title}</h3>
+            </div>
+            <button
+              type="button"
+              onClick={() => toggleComplete(currentStep)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                completedSteps.has(currentStep)
+                  ? 'bg-green-100 text-green-700'
+                  : 'bg-slate-200 text-slate-600 hover:bg-blue-100 hover:text-blue-700'
+              }`}
+            >
+              {completedSteps.has(currentStep) ? 'Готово' : 'Отметить'}
+            </button>
+          </div>
+
+          <div className="p-5 space-y-4">
+            {/* Where */}
+            <div className="flex items-start gap-3">
+              <div className="w-7 h-7 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Eye size={14} />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-slate-500 uppercase">Где</p>
+                <p className="text-sm text-slate-700 font-medium">{step.where}</p>
+              </div>
+            </div>
+
+            {/* Action */}
+            <div className="flex items-start gap-3">
+              <div className="w-7 h-7 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <ArrowRight size={14} />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-slate-500 uppercase">Что делать</p>
+                <p className="text-sm text-slate-700">{step.action}</p>
+              </div>
+            </div>
+
+            {/* Fields to fill */}
+            {step.fields && (
+              <div className="bg-slate-50 rounded-xl border border-slate-200 p-4">
+                <p className="text-xs font-semibold text-slate-500 uppercase mb-3">Заполняем поля</p>
+                <div className="space-y-2">
+                  {step.fields.map((f) => (
+                    <div key={f.label} className="flex items-center gap-3 text-sm">
+                      <span className="text-slate-500 w-32 flex-shrink-0 text-right">{f.label}:</span>
+                      <span className="font-semibold text-slate-800 bg-white px-3 py-1 rounded-lg border border-slate-200 flex-1">
+                        {f.value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-slate-400 mt-3">Нажми «Сохранить».</p>
+              </div>
+            )}
+
+            {/* Result */}
+            <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+              <p className="text-xs font-semibold text-green-700 uppercase mb-1">Что произошло</p>
+              <p className="text-sm text-green-800">{step.result}</p>
+            </div>
+
+            {/* Tip */}
+            {step.tip && (
+              <div className="bg-amber-50 border-l-4 border-l-amber-400 rounded-r-lg px-4 py-3">
+                <p className="text-sm text-amber-800">
+                  <strong>Проверь:</strong> {step.tip}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Navigation */}
+          <div className="border-t border-slate-200 px-5 py-3 flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
+              disabled={currentStep === 0}
+              className="px-4 py-2 text-sm font-medium rounded-lg text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              Назад
+            </button>
+            {currentStep < ONBOARDING_STEPS.length - 1 ? (
+              <button
+                type="button"
+                onClick={() => {
+                  toggleComplete(currentStep);
+                  setCurrentStep(currentStep + 1);
+                }}
+                className="px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors flex items-center gap-1.5"
+              >
+                Дальше <ChevronRight size={16} />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => toggleComplete(currentStep)}
+                className="px-4 py-2 text-sm font-medium rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors"
+              >
+                Завершить
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const Help: React.FC = () => {
   const { isAdmin } = useAuth();
   const [search, setSearch] = useState('');
+  const [tab, setTab] = useState<'onboarding' | 'kb'>('onboarding');
 
   const sections = [
     { id: 'login', title: '1. Вход в систему' },
@@ -144,15 +435,42 @@ const Help: React.FC = () => {
 
   return (
     <div className="max-w-4xl space-y-4">
-      {/* Header */}
+      {/* Header + Tabs */}
       <div>
         <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
           <BookOpen className="text-blue-600" />
           База знаний
         </h2>
-        <p className="text-slate-500 text-sm mt-1">Полное руководство по MetalTrack Pro. Каждый раздел, каждое поле.</p>
+        <p className="text-slate-500 text-sm mt-1">Полное руководство по MetalTrack Pro</p>
       </div>
 
+      <div className="flex gap-1 bg-slate-200 p-1 rounded-xl">
+        <button
+          type="button"
+          onClick={() => setTab('onboarding')}
+          className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
+            tab === 'onboarding' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          <Rocket size={16} />
+          Знакомство
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab('kb')}
+          className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
+            tab === 'kb' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          <BookOpen size={16} />
+          Справочник
+        </button>
+      </div>
+
+      {tab === 'onboarding' && <Onboarding />}
+
+      {tab === 'kb' && (
+        <>
       {/* Search + TOC */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
         <div className="relative mb-3">
@@ -642,6 +960,8 @@ DELETE FROM public.companies;`}</CodeBlock>
           </details>
         ))}
       </Section>
+        </>
+      )}
     </div>
   );
 };
