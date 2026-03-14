@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MetalTrack Pro — Полное руководство</title>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0f;
+  --surface: #13131a;
+  --surface2: #1c1c28;
+  --accent: #f97316;
+  --accent2: #06b6d4;
+  --green: #22c55e;
+  --red: #ef4444;
+  --text: #e2e8f0;
+  --muted: #64748b;
+  --border: #2a2a3a;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'Nunito', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+h1,h2,h3,h4 { font-family: 'Unbounded', sans-serif; }
+
+.hero {
+  min-height: 70vh;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; padding: 2rem; position: relative; overflow: hidden;
+}
+.hero::before {
+  content:''; position:absolute; top:-40%; left:-20%; width:140%; height:140%;
+  background: radial-gradient(ellipse at 30% 50%, rgba(249,115,22,0.12) 0%, transparent 60%),
+              radial-gradient(ellipse at 70% 60%, rgba(6,182,212,0.08) 0%, transparent 60%);
+  animation: drift 20s ease-in-out infinite alternate; z-index:0;
+}
+@keyframes drift { 0%{transform:translate(0,0) rotate(0deg);} 100%{transform:translate(40px,-30px) rotate(3deg);} }
+.hero>* { position:relative; z-index:1; }
+.hero .logo {
+  width:80px; height:80px; background:linear-gradient(135deg,var(--accent),#ea580c); border-radius:20px;
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Unbounded'; font-size:2.5rem; font-weight:800; color:#fff;
+  box-shadow:0 20px 60px rgba(249,115,22,0.3); margin-bottom:2rem;
+}
+.hero h1 {
+  font-size:clamp(2rem,5vw,3.2rem); font-weight:800;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:0.75rem;
+}
+.hero p { font-size:1.15rem; color:var(--muted); max-width:650px; margin-bottom:1.5rem; }
+
+/* TOC */
+.toc {
+  background: var(--surface); border:1px solid var(--border); border-radius:16px;
+  padding:1.5rem 2rem; margin:2rem auto; max-width:700px;
+}
+.toc h3 { font-size:0.9rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:1rem; }
+.toc-list { list-style:none; display:grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap:0.4rem; }
+.toc-list a {
+  display:block; padding:0.5rem 0.75rem; border-radius:8px; color:var(--text);
+  text-decoration:none; font-size:0.9rem; font-weight:600; transition:background 0.15s;
+}
+.toc-list a:hover { background: var(--surface2); }
+.toc-list .num { display:inline-block; width:24px; height:24px; border-radius:6px;
+  background:var(--accent); color:#fff; text-align:center; font-size:0.7rem; line-height:24px;
+  font-family:'Unbounded'; font-weight:800; margin-right:0.6rem; vertical-align:middle; }
+
+.container { max-width:900px; margin:0 auto; padding:0 1.5rem; }
+section { padding:4rem 0; }
+section h2 { font-size:clamp(1.4rem,3vw,2rem); font-weight:800; margin-bottom:0.4rem; }
+section .subtitle { color:var(--muted); font-size:0.95rem; margin-bottom:2rem; }
+
+/* Flow steps */
+.flow { display:flex; flex-direction:column; gap:0; }
+.flow-step { display:flex; gap:1.25rem; position:relative; padding-bottom:2rem; }
+.flow-step:last-child { padding-bottom:0; }
+.flow-line { display:flex; flex-direction:column; align-items:center; flex-shrink:0; width:36px; }
+.flow-line .dot {
+  width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  font-family:'Unbounded'; font-weight:800; font-size:0.8rem; color:#fff; flex-shrink:0;
+}
+.flow-line .line { flex:1; width:2px; background:var(--border); margin-top:6px; }
+.flow-step:last-child .line { display:none; }
+.flow-content {
+  background:var(--surface); border:1px solid var(--border); border-radius:14px;
+  padding:1.25rem 1.5rem; flex:1;
+}
+.flow-content h3 { font-size:0.95rem; margin-bottom:0.3rem; }
+.flow-content p { color:var(--muted); font-size:0.88rem; }
+.flow-content strong { color:var(--text); }
+
+/* Tags */
+.tag { display:inline-block; padding:2px 10px; border-radius:999px; font-size:0.72rem; font-weight:700; margin-top:0.4rem; }
+.tag-orange { background:rgba(249,115,22,0.15); color:var(--accent); }
+.tag-cyan { background:rgba(6,182,212,0.15); color:var(--accent2); }
+.tag-green { background:rgba(34,197,94,0.15); color:var(--green); }
+.tag-red { background:rgba(239,68,68,0.15); color:var(--red); }
+.tag-muted { background:rgba(100,116,139,0.15); color:var(--muted); }
+
+/* Field table */
+.field-table { width:100%; border-collapse:collapse; font-size:0.88rem; margin:1rem 0; }
+.field-table th, .field-table td { padding:0.6rem 0.75rem; text-align:left; border-bottom:1px solid var(--border); }
+.field-table th { font-family:'Unbounded'; font-weight:600; font-size:0.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em; }
+.field-table tr:hover td { background:var(--surface); }
+.field-table .required { color:var(--red); font-weight:700; }
+.field-table .optional { color:var(--muted); }
+.field-table code { background:var(--surface2); padding:1px 6px; border-radius:4px; font-size:0.82rem; }
+
+/* Callout */
+.callout { background:var(--surface2); border-left:3px solid var(--accent); border-radius:0 10px 10px 0; padding:1rem 1.25rem; margin:1.25rem 0; font-size:0.88rem; }
+.callout.info { border-left-color:var(--accent2); }
+.callout.warn { border-left-color:var(--red); }
+.callout strong { color:var(--text); }
+
+/* Separator */
+.sep { height:1px; background:var(--border); margin:3rem 0; }
+
+/* Cards grid */
+.card-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1rem; }
+.card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1.25rem; }
+.card h4 { font-size:0.9rem; margin-bottom:0.3rem; }
+.card p { color:var(--muted); font-size:0.85rem; }
+
+/* Role compare */
+.role-grid { display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin:1.5rem 0; }
+.role-box { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:1.25rem 1.5rem; }
+.role-box h4 { font-size:0.9rem; margin-bottom:0.75rem; }
+.role-box ul { list-style:none; }
+.role-box li { padding:0.25rem 0; font-size:0.88rem; color:var(--muted); }
+.role-box li::before { content:''; display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:0.6rem; vertical-align:middle; }
+.role-box.yes li::before { background:var(--green); }
+.role-box.no li::before { background:var(--red); }
+
+/* Formula */
+.formula-box {
+  background:linear-gradient(135deg,var(--surface),var(--surface2)); border:2px solid var(--accent);
+  border-radius:16px; padding:1.75rem; text-align:center; margin:1.5rem 0;
+}
+.formula-box .formula { font-family:'Unbounded'; font-size:clamp(0.9rem,2.5vw,1.3rem); font-weight:600; }
+.formula-box .formula .green { color:var(--green); }
+.formula-box .formula .red { color:var(--red); }
+.formula-box .formula .cyan { color:var(--accent2); }
+.formula-box .explain { color:var(--muted); font-size:0.82rem; margin-top:0.75rem; }
+
+/* FAQ */
+details { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1rem 1.25rem; margin-bottom:0.6rem; cursor:pointer; }
+details[open] { border-color:var(--accent); }
+summary { font-weight:700; font-size:0.95rem; list-style:none; display:flex; align-items:center; gap:0.6rem; }
+summary::before { content:''; display:inline-block; width:0; height:0; border-left:6px solid var(--accent); border-top:4px solid transparent; border-bottom:4px solid transparent; transition:transform 0.2s; flex-shrink:0; }
+details[open] summary::before { transform:rotate(90deg); }
+details .answer { color:var(--muted); font-size:0.88rem; margin-top:0.6rem; padding-left:1.2rem; }
+
+footer { text-align:center; padding:2.5rem 0; color:var(--muted); font-size:0.78rem; border-top:1px solid var(--border); }
+
+@media(max-width:700px) { .role-grid{grid-template-columns:1fr;} .card-grid{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="logo">M</div>
+  <h1>MetalTrack Pro</h1>
+  <p>Полное руководство по системе учёта металла. Каждый раздел, каждое поле, пошагово.</p>
+</div>
+
+<!-- TABLE OF CONTENTS -->
+<div class="container">
+<div class="toc">
+  <h3>Содержание</h3>
+  <ul class="toc-list">
+    <li><a href="#login"><span class="num">1</span>Вход в систему</a></li>
+    <li><a href="#roles"><span class="num">2</span>Роли: оператор и админ</a></li>
+    <li><a href="#dashboard"><span class="num">3</span>Главная</a></li>
+    <li><a href="#movements"><span class="num">4</span>Движение металла</a></li>
+    <li><a href="#inventory"><span class="num">5</span>Остатки на складе</a></li>
+    <li><a href="#expenses"><span class="num">6</span>Расходы</a></li>
+    <li><a href="#money"><span class="num">7</span>Деньги (сводка)</a></li>
+    <li><a href="#works"><span class="num">8</span>Работы</a></li>
+    <li><a href="#companies"><span class="num">9</span>Компании</a></li>
+    <li><a href="#materials"><span class="num">10</span>Материалы</a></li>
+    <li><a href="#rates"><span class="num">11</span>Тарифы</a></li>
+    <li><a href="#history"><span class="num">12</span>История (админ)</a></li>
+    <li><a href="#concepts"><span class="num">13</span>Ключевые понятия</a></li>
+    <li><a href="#reset"><span class="num">14</span>Как удалить все данные</a></li>
+    <li><a href="#faq"><span class="num">15</span>Частые вопросы</a></li>
+  </ul>
+</div>
+</div>
+
+<!-- =========================================== -->
+<!-- 1. LOGIN -->
+<!-- =========================================== -->
+<section id="login">
+<div class="container">
+  <h2>1. Вход в систему</h2>
+  <p class="subtitle">Без входа ничего не работает. Каждый пользователь имеет свой email и пароль.</p>
+
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-line"><div class="dot" style="background:var(--accent);">1</div><div class="line"></div></div>
+      <div class="flow-content">
+        <h3>Открой приложение</h3>
+        <p>Если ты не залогинен, тебя автоматически перекинет на страницу входа.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-line"><div class="dot" style="background:var(--accent);">2</div><div class="line"></div></div>
+      <div class="flow-content">
+        <h3>Введи email и пароль</h3>
+        <p>Те, что тебе дал администратор. Нажми <strong>Войти</strong>.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-line"><div class="dot" style="background:var(--green);">3</div></div>
+      <div class="flow-content">
+        <h3>Ты внутри</h3>
+        <p>Откроется главная страница. В левом меню (или внизу на телефоне) — все разделы. Сессия сохраняется, пока не нажмёшь <strong>Выйти</strong>.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout warn">
+    <strong>Неверный пароль?</strong> Появится сообщение «Неверный email или пароль». Проверь раскладку и caps lock. Если забыл пароль — пиши администратору.
+  </div>
+</div>
+</section>
+
+<!-- =========================================== -->
+<!-- 2. ROLES -->
+<!-- =========================================== -->
+<section id="roles" style="background:var(--surface);">
+<div class="container">
+  <h2>2. Роли: оператор и админ</h2>
+  <p class="subtitle">В системе две роли. Какая у тебя — видно в правом верхнем углу (бейдж).</p>
+
+  <div class="role-grid">
+    <div class="role-box yes">
+      <h4 style="color:var(--accent2);">Оператор</h4>
+      <ul>
+        <li>Добавлять движения (приход/расход)</li>
+        <li>Добавлять расходы</li>
+        <li>Добавлять работы</li>
+        <li>Смотреть остатки, деньги, справочники</li>
+        <li>Удалять только <strong>свои</strong> записи</li>
+      </ul>
+    </div>
+    <div class="role-box no">
+      <h4 style="color:var(--red);">Оператор НЕ может</h4>
+      <ul>
+        <li>Удалять чужие записи</li>
+        <li>Редактировать справочники (компании, материалы, тарифы)</li>
+        <li>Открывать раздел «История»</li>
+      </ul>
+    </div>
+  </div>
+  <div class="role-grid">
+    <div class="role-box yes" style="grid-column:1/-1;">
+      <h4 style="color:var(--accent);">Админ — всё то же самое + дополнительно</h4>
+      <ul>
+        <li>Удалять любые записи (движения, расходы, работы) — не только свои</li>
+        <li>Добавлять, редактировать и удалять компании</li>
+        <li>Добавлять, редактировать и удалять материалы</li>
+        <li>Добавлять, редактировать и удалять тарифы</li>
+        <li>Раздел «История» — полный аудит: кто, когда и что менял</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- =========================================== -->
+<!-- 3. DASHBOARD -->
+<!-- =========================================== -->
+<section id="dashboard">
+<div class="container">
+  <h2>3. Главная</h2>
+  <p class="subtitle">Первое, что видишь после входа. Сводка по всему.</p>
+
+  <h3 style="font-size:0.95rem; margin-bottom:1rem;">Верхние карточки — вес</h3>
+  <div class="card-grid" style="grid-template-columns:repeat(3,1fr); margin-bottom:1.5rem;">
+    <div class="card"><h4>Остаток на складе</h4><p>Сколько тонн металла лежит прямо сейчас. Считается автоматически: приход минус расход.</p></div>
+    <div class="card"><h4>Приход (вес)</h4><p>Общий вес всего металла, который когда-либо приходил на склад.</p></div>
+    <div class="card"><h4>Расход (вес)</h4><p>Общий вес всего металла, который когда-либо уходил со склада.</p></div>
+  </div>
+
+  <h3 style="font-size:0.95rem; margin-bottom:1rem;">Нижние карточки — деньги</h3>
+  <div class="card-grid" style="grid-template-columns:repeat(4,1fr); margin-bottom:1.5rem;">
+    <div class="card"><h4>Закупки</h4><p>Сумма всех приходов в рублях. Вес умноженный на цену за тонну.</p></div>
+    <div class="card"><h4>Продажи</h4><p>Сумма всех расходов в рублях. Вес умноженный на цену за тонну.</p></div>
+    <div class="card"><h4>Расходы</h4><p>Сумма из раздела «Расходы»: транспорт, погрузка, аренда и т.д.</p></div>
+    <div class="card"><h4>Прибыль</h4><p>Продажи минус закупки минус расходы. Зелёная, если плюс. Красная, если минус.</p></div>
+  </div>
+
+  <h3 style="font-size:0.95rem; margin-bottom:1rem;">График</h3>
+  <p style="color:var(--muted); font-size:0.9rem;">Столбчатая диаграмма — остатки по материалам в тоннах. Какого металла больше всего на складе.</p>
+</div>
+</section>
+
+<!-- =========================================== -->
+<!-- 4. MOVEMENTS -->
+<!-- =========================================== -->
+<section id="movements" style="background:var(--surface);">
+<div class="container">
+  <h2>4. Движение металла</h2>
+  <p class="subtitle">Главный раздел. Сюда записывается каждая покупка и продажа металла.</p>
+
+  <h3 style="font-size:0.95rem; margin-bottom:1rem;">Как добавить запись</h3>
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-line"><div class="dot" style="background:var(--accent);">1</div><div class="line"></div></div>
+      <div class="flow-content">
+        <h3>Нажми «Добавить запись»</h3>
+        <p>Кнопка сверху справа. Откроется форма.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-line"><div class="dot" style="background:var(--accent);">2</div><div class="line"></div></div>
+      <div class="flow-content">
+        <h3>Заполни поля</h3>
+        <p>Все поля описаны в таблице ниже. Обязательные отмечены звёздочкой.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-line"><div class="dot" style="background:var(--green);">3</div></div>
+      <div class="flow-content">
+        <h3>Нажми «Сохранить»</h3>
+        <p>Запись появится в таблице. Остаток обновится автоматически.</p>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="font-size:0.95rem; margin:1.5rem 0 0.75rem;">Поля формы</h3>
+  <div style="overflow-x:auto;">
+  <table class="field-table">
+    <thead><tr><th>Поле</th><th>Что писать</th><th></th></tr></thead>
+    <tbody>
+      <tr><td><strong>Дата</strong></td><td>Дата операции. По умолчанию — сегодня.</td><td class="required">*</td></tr>
+      <tr><td><strong>Операция</strong></td><td><code>Приход</code> — купил/получил металл. <code>Расход</code> — продал/отгрузил.</td><td class="required">*</td></tr>
+      <tr><td><strong>Компания</strong></td><td>От кого купил (при приходе) или кому продал (при расходе). Выбирается из справочника.</td><td class="required">*</td></tr>
+      <tr><td><strong>Материал</strong></td><td>Тип металла: труба, лист, арматура и т.д. Выбирается из справочника.</td><td class="required">*</td></tr>
+      <tr><td><strong>Размер</strong></td><td>Размер в свободной форме. Пример: <code>530x6</code>, <code>89x4</code>, <code>Лист 10мм</code>.</td><td class="required">*</td></tr>
+      <tr><td><strong>Владение</strong></td><td><code>Наш товар</code> — купили себе. <code>Товар клиента</code> — храним чужой металл.</td><td class="required">*</td></tr>
+      <tr><td><strong>Вес (тонн)</strong></td><td>Вес в тоннах. Можно с тысячными: <code>1.250</code>.</td><td class="required">*</td></tr>
+      <tr><td><strong>Цена за тонну</strong></td><td>Цена закупки или продажи в рублях. Сумма сделки посчитается автоматически (вес x цена).</td><td class="optional">необяз.</td></tr>
+      <tr><td><strong>Стоимость погр./разгр.</strong></td><td>Сколько заплатили за погрузку/разгрузку конкретно этой партии.</td><td class="optional">необяз.</td></tr>
+      <tr><td><strong>Примечание</strong></td><td>Любой комментарий. Номер машины, номер накладной, что угодно.</td><td class="optional">необяз.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="callout">
+    <strong>Сумма сделки</strong> — считается автоматически: вес x цена за тонну. Её нельзя ввести вручную. Если цена не указана, сумма будет 0.
+  </div>
+
+  <div class="callout warn">
+    <strong>Отрицательный баланс.</strong> Если при расходе остаток по этой позиции уйдёт в минус, система покажет предупреждение. Можно подтвердить (если осознанно) или отменить.
+  </div>
+
+  <h3 style="font-size:0.95rem; margin:1.5rem 0 0.75rem;">Что видно в таблице</h3>
+  <p style="color:var(--muted); font-size:0.9rem; margin-bottom:0.75rem;">Все записи движений. Колонки: дата, компания, операция (приход/расход), материал, размер, владение, вес, цена за тонну, сумма, стоимость погрузки, примечание. Есть поиск по компании и материалу.</p>
+
+  <h3 style="font-size:0.95rem; margin:1.5rem 0 0.75rem;">Как удалить запись</h3>
+  <p style="color:var(--muted); font-size:0.9rem;">Нажми иконку корзины справа от записи. Оператор может удалять только свои записи. Админ — любые. При удалении остаток пересчитается обратно.</p>
+</div>
+</section>
+
+<!-- =========================================== -->
+<!-- 5. INVENTORY -->
+<!-- =========================================== -->
+<section id="inventory">
+<div class="container">
+  <h2>5. Остатки на складе</h2>
+  <p class="subtitle">Автоматический расчёт. Ничего вручную вводить не надо — всё берётся из движений.</p>
+
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-line"><div class="dot" style="background:var(--accent2);">A</div><div class="line"></div></div>
+      <div class="flow-content">
+        <h3>Режим «Сводно» (по умолчанию)</h3>
+        <p>Остатки сгруппированы по <strong>материал + размер + владение</strong>. Не важно, от какой компании приход — всё суммируется. Удобно, чтобы видеть общую картину склада.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-line"><div class="dot" style="background:var(--accent2);">Б</div><div class="line"></div></div>
+      <div class="flow-content">
+        <h3>Режим «По компаниям»</h3>
+        <p>Нажми кнопку <strong>«Разбить по компаниям»</strong>. Каждая строка — отдельная позиция с указанием компании. Видно, сколько металла Энергоинвеста, сколько вашего, и т.д.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-line"><div class="dot" style="background:var(--green);">В</div></div>
+      <div class="flow-content">
+        <h3>Фильтр по владению</h3>
+        <p>Выпадающий список: <strong>Все товары</strong>, <strong>Только наши</strong>, <strong>Товар клиента</strong>. Фильтрует таблицу.</p>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="font-size:0.95rem; margin:1.5rem 0 0.75rem;">Колонки таблицы</h3>
+  <div style="overflow-x:auto;">
+  <table class="field-table">
+    <thead><tr><th>Колонка</th><th>Что показывает</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Компания</strong></td><td>Только в режиме «По компаниям». От кого пришёл металл.</td></tr>
+      <tr><td><strong>Материал</strong></td><td>Тип металла (труба, лист и т.д.).</td></tr>
+      <tr><td><strong>Размер</strong></td><td>Размер (530x6, 89x4 и т.д.).</td></tr>
+      <tr><td><strong>Владение</strong></td><td>«Наш» или «Клиента».</td></tr>
+      <tr><td><strong>Остаток (т)</strong></td><td>Сколько тонн лежит. Приход минус расход. Красный, если отрицательный.</td></tr>
+      <tr><td><strong>Стоимость</strong></td><td>Остаток в рублях. Средняя цена закупки умноженная на остаток в тоннах.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="callout info">
+    <strong>Экспорт CSV.</strong> Кнопка «Экспорт CSV» скачивает текущую таблицу в файл, который можно открыть в Excel. Скачивается то, что видишь — с учётом фильтров и режима.
+  </div>
+</div>
+</section>
+
+<!-- =========================================== -->
+<!-- 6. EXPENSES -->
+<!-- =========================================== -->
+<section id="expenses" style="background:var(--surface);">
+<div class="container">
+  <h2>6. Расходы</h2>
+  <p class="subtitle">Все затраты, не связанные напрямую с покупкой/продажей металла. Транспорт, аренда, зарплата и т.д.</p>
+
+  <h3 style="font-size:0.95rem; margin-bottom:1rem;">Как добавить расход</h3>
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-line"><div class="dot" style="background:var(--accent);">1</div><div class="line"></div></div>
+      <div class="flow-content">
+        <h3>Нажми «Добавить расход»</h3>
+        <p>Кнопка сверху справа. Откроется форма.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-line"><div class="dot" style="background:var(--accent);">2</div><div class="line"></div></div>
+      <div class="flow-content">
+        <h3>Заполни поля</h3>
+        <p>Дата, категория, описание, сумма. Можно привязать к компании (не обязательно).</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-line"><div class="dot" style="background:var(--green);">3</div></div>
+      <div class="flow-content">
+        <h3>Сохрани</h3>
+        <p>Расход появится в таблице и учтётся в сводке «Деньги».</p>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="font-size:0.95rem; margin:1.5rem 0 0.75rem;">Поля формы</h3>
+  <div style="overflow-x:auto;">
+  <table class="field-table">
+    <thead><tr><th>Поле</th><th>Что писать</th><th></th></tr></thead>
+    <tbody>
+      <tr><td><strong>Дата</strong></td><td>Дата расхода. По умолчанию — сегодня.</td><td class="required">*</td></tr>
+      <tr><td><strong>Категория</strong></td><td>Выбери из списка (см. ниже).</td><td class="required">*</td></tr>
+      <tr><td><strong>Описание</strong></td><td>Что за расход. Пример: «Доставка трубы 530 из Челябинска», «Зарплата за март».</td><td class="required">*</td></tr>
+      <tr><td><strong>Сумма</strong></td><td>Сколько потрачено в рублях.</td><td class="required">*</td></tr>
+      <tr><td><strong>Компания</strong></td><td>К какой компании относится расход. Можно не указывать.</td><td class="optional">необяз.</td></tr>
+      <tr><td><strong>Примечание</strong></td><td>Любой комментарий.</td><td class="optional">необяз.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3 style="font-size:0.95rem; margin:1.5rem 0 0.75rem;">Категории расходов</h3>
+  <div class="card-grid" style="grid-template-columns:repeat(5,1fr);">
+    <div class="card"><h4>Транспорт</h4><p>Доставка, перевозка, топливо.</p></div>
+    <div class="card"><h4>Погрузка</h4><p>Погрузка, разгрузка, кран.</p></div>
+    <div class="card"><h4>Обработка</h4><p>Резка, сварка, зачистка.</p></div>
+    <div class="card"><h4>Аренда / ЗП</h4><p>Аренда склада, зарплата, коммуналка.</p></div>
+    <div class="card"><h4>Прочее</h4><p>Всё остальное.</p></div>
+  </div>
+
+  <div class="callout info">
+    <strong>Фильтры.</strong> Вверху есть поиск по описанию и фильтр по категории. Внизу таблицы — итоговая сумма по текущему фильтру.
+  </div>
+</div>
+</section>
+
+<!-- =========================================== -->
+<!-- 7. MONEY -->
+<!-- =========================================== -->
+<section id="money">
+<div class="container">
+  <h2>7. Деньги (финансовая сводка)</h2>
+  <p class="subtitle">Всё в одном месте: сколько потратили, сколько заработали, какая прибыль, у кого сколько металла.</p>
+
+  <h3 style="font-size:0.95rem; margin-bottom:1rem;">Карточки вверху</h3>
+  <div class="card-grid" style="grid-template-columns:repeat(4,1fr); margin-bottom:1.5rem;">
+    <div class="card"><h4 style="color:var(--accent2);">Закупки</h4><p>Сумма всех приходов. Вес x цена за тонну по каждому приходу.</p></div>
+    <div class="card"><h4 style="color:var(--green);">Продажи</h4><p>Сумма всех расходов (продаж). Вес x цена за тонну по каждому расходу.</p></div>
+    <div class="card"><h4 style="color:var(--red);">Расходы</h4><p>Общая сумма из раздела «Расходы».</p></div>
+    <div class="card"><h4>Прибыль</h4><p>Продажи минус закупки минус расходы.</p></div>
+  </div>
+
+  <div class="formula-box">
+    <div class="formula"><span class="green">ПРИБЫЛЬ</span> = <span class="cyan">Продажи</span> - <span class="red">Закупки</span> - <span class="red">Расходы</span></div>
+    <div class="explain">Если прибыль положительная — блок зелёный. Отрицательная — красный.</div>
+  </div>
+
+  <h3 style="font-size:0.95rem; margin:1.5rem 0 0.75rem;">Таблица «По компаниям»</h3>
+  <p style="color:var(--muted); font-size:0.9rem; margin-bottom:0.75rem;">Для каждой компании показывается:</p>
+  <div style="overflow-x:auto;">
+  <table class="field-table">
+    <thead><tr><th>Колонка</th><th>Что показывает</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Компания</strong></td><td>Название. Энергоинвест, Никамет и т.д.</td></tr>
+      <tr><td><strong>Закупки</strong></td><td>На сколько рублей закупили металла у этой компании (или для неё).</td></tr>
+      <tr><td><strong>Продажи</strong></td><td>На сколько рублей продали металла этой компании.</td></tr>
+      <tr><td><strong>Остаток (т)</strong></td><td>Сколько тонн металла сейчас числится за этой компанией.</td></tr>
+      <tr><td><strong>Стоимость</strong></td><td>Стоимость остатка в рублях (средняя цена закупки x остаток).</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="callout">
+    <strong>Энергоинвест</strong> — будет отдельной строкой. Видно: сколько у них металла, на какую сумму, сколько закупили, сколько продали.
+  </div>
+
+  <h3 style="font-size:0.95rem; margin:1.5rem 0 0.75rem;">График «Расходы по категориям»</h3>
+  <p style="color:var(--muted); font-size:0.9rem;">Горизонтальная диаграмма: сколько потратили на транспорт, сколько на погрузку, сколько на обработку и т.д.</p>
+</div>
+</section>
+
+<!-- =========================================== -->
+<!-- 8. WORKS -->
+<!-- =========================================== -->
+<section id="works" style="background:var(--surface);">
+<div class="container">
+  <h2>8. Работы</h2>
+  <p class="subtitle">Учёт выполненных услуг: резка, сварка и т.д. Сумма считается по тарифу.</p>
+
+  <h3 style="font-size:0.95rem; margin-bottom:1rem;">Как добавить работу</h3>
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-line"><div class="dot" style="background:var(--accent);">1</div><div class="line"></div></div>
+      <div class="flow-content">
+        <h3>Нажми «Добавить работу»</h3>
+        <p>Откроется форма.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-line"><div class="dot" style="background:var(--accent);">2</div><div class="line"></div></div>
+      <div class="flow-content">
+        <h3>Заполни поля</h3>
+        <p><strong>Дата</strong>, <strong>компания</strong> (для кого делали), <strong>материал</strong> (не обязательно), <strong>вид работ</strong> (из справочника тарифов), <strong>количество</strong>.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-line"><div class="dot" style="background:var(--green);">3</div></div>
+      <div class="flow-content">
+        <h3>Сумма посчитается сама</h3>
+        <p>Количество x цена из тарифа = итого. Нажми <strong>Сохранить</strong>.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout info">
+    <strong>Разница между «Работы» и «Расходы».</strong><br>
+    «Работы» — конкретные услуги с ценой за единицу из справочника тарифов (резка 1500 руб/тн, сварка 800 руб/шт).<br>
+    «Расходы» — любые затраты произвольной суммы (транспорт 15 000 руб, аренда 50 000 руб).
+  </div>
+</div>
+</section>
+
+<!-- =========================================== -->
+<!-- 9. COMPANIES -->
+<!-- =========================================== -->
+<section id="companies">
+<div class="container">
+  <h2>9. Компании</h2>
+  <p class="subtitle">Справочник контрагентов. Все компании, с которыми работаешь.</p>
+
+  <h3 style="font-size:0.95rem; margin-bottom:0.75rem;">Поля компании</h3>
+  <div style="overflow-x:auto;">
+  <table class="field-table">
+    <thead><tr><th>Поле</th><th>Что это</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Название</strong></td><td>Уникальное имя компании. Пример: «Энергоинвест», «Никамет», «ТрубоСталь».</td></tr>
+      <tr><td><strong>Тип</strong></td><td><code>Поставщик</code> — у них покупаешь. <code>Покупатель</code> — им продаёшь. <code>Поставщик и покупатель</code> — и то и другое.</td></tr>
+      <tr><td><strong>Статус</strong></td><td><code>Активна</code> или <code>Неактивна</code>. Неактивные не показываются в выпадающих списках при создании движений/работ.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="callout">
+    <strong>Только админ</strong> может добавлять, редактировать и удалять компании. Оператор видит список, но не может менять.
+  </div>
+
+  <p style="color:var(--muted); font-size:0.9rem; margin-top:1rem;">Чекбокс <strong>«Показать неактивные»</strong> — покажет скрытые компании. Клик на статус (Активна/Неактивна) — быстро переключает статус (только для админа).</p>
+</div>
+</section>
+
+<!-- =========================================== -->
+<!-- 10. MATERIALS -->
+<!-- =========================================== -->
+<section id="materials" style="background:var(--surface);">
+<div class="container">
+  <h2>10. Материалы</h2>
+  <p class="subtitle">Справочник типов металла. Используется при создании движений.</p>
+
+  <p style="color:var(--muted); font-size:0.9rem; margin-bottom:1rem;">Всё работает так же, как компании: название + статус (активен/неактивен). Только админ может добавлять, редактировать, удалять.</p>
+
+  <h3 style="font-size:0.95rem; margin-bottom:0.75rem;">Примеры материалов</h3>
+  <div class="card-grid" style="grid-template-columns:repeat(auto-fill,minmax(140px,1fr));">
+    <div class="card"><h4>Труба</h4></div>
+    <div class="card"><h4>Лист</h4></div>
+    <div class="card"><h4>Арматура</h4></div>
+    <div class="card"><h4>Швеллер</h4></div>
+    <div class="card"><h4>Уголок</h4></div>
+    <div class="card"><h4>Балка</h4></div>
+  </div>
+
+  <div class="callout info" style="margin-top:1.25rem;">
+    <strong>Размер</strong> указывается не здесь, а в движении. Материал — это общий тип (труба). Размер — это конкретика (530x6). Одна «труба» может иметь десятки разных размеров.
+  </div>
+</div>
+</section>
+
+<!-- =========================================== -->
+<!-- 11. RATES -->
+<!-- =========================================== -->
+<section id="rates">
+<div class="container">
+  <h2>11. Тарифы</h2>
+  <p class="subtitle">Справочник цен на работы. Используется при создании записей в разделе «Работы».</p>
+
+  <div style="overflow-x:auto;">
+  <table class="field-table">
+    <thead><tr><th>Поле</th><th>Что это</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Вид работ</strong></td><td>Название услуги. Пример: «Резка газом», «Сварка стык», «Зачистка».</td></tr>
+      <tr><td><strong>Ед. измерения</strong></td><td>В чём считается: тонна, штука, погонный метр, час.</td></tr>
+      <tr><td><strong>Цена за единицу</strong></td><td>Сколько стоит одна единица. В рублях.</td></tr>
+      <tr><td><strong>Статус</strong></td><td>Активен или нет. Неактивные не показываются при создании работ.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="callout">
+    <strong>Только админ</strong> может менять тарифы. Редактирование — прямо в таблице: клик на иконку карандаша, меняешь, сохраняешь.
+  </div>
+</div>
+</section>
+
+<!-- =========================================== -->
+<!-- 12. HISTORY -->
+<!-- =========================================== -->
+<section id="history" style="background:var(--surface);">
+<div class="container">
+  <h2>12. История (только для админа)</h2>
+  <p class="subtitle">Полный аудит всех изменений в системе. Кто, когда, что сделал.</p>
+
+  <p style="color:var(--muted); font-size:0.9rem; margin-bottom:1rem;">Оператор этот раздел не видит вообще — его нет в меню. Только админ.</p>
+
+  <h3 style="font-size:0.95rem; margin-bottom:0.75rem;">Что записывается</h3>
+  <p style="color:var(--muted); font-size:0.9rem; margin-bottom:0.75rem;">Каждое создание, изменение и удаление в таблицах: движения, расходы, работы, позиции, компании, материалы, тарифы.</p>
+
+  <h3 style="font-size:0.95rem; margin:1rem 0 0.75rem;">Колонки</h3>
+  <div style="overflow-x:auto;">
+  <table class="field-table">
+    <thead><tr><th>Колонка</th><th>Что показывает</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Дата и время</strong></td><td>Когда произошло изменение.</td></tr>
+      <tr><td><strong>Пользователь</strong></td><td>Кто сделал (email).</td></tr>
+      <tr><td><strong>Таблица</strong></td><td>В какой таблице: Движения, Расходы, Работы, Компании и т.д.</td></tr>
+      <tr><td><strong>Действие</strong></td><td>Создание, Изменение или Удаление.</td></tr>
+      <tr><td><strong>Было</strong></td><td>Старые данные (при изменении или удалении).</td></tr>
+      <tr><td><strong>Стало</strong></td><td>Новые данные (при создании или изменении).</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p style="color:var(--muted); font-size:0.9rem; margin-top:1rem;">Есть фильтры: по тексту, по таблице, по типу действия.</p>
+</div>
+</section>
+
+<!-- =========================================== -->
+<!-- 13. CONCEPTS -->
+<!-- =========================================== -->
+<section id="concepts">
+<div class="container">
+  <h2>13. Ключевые понятия</h2>
+  <p class="subtitle">Термины, которые используются в системе.</p>
+
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-line"><div class="dot" style="background:var(--accent);">1</div><div class="line"></div></div>
+      <div class="flow-content">
+        <h3>Позиция</h3>
+        <p>Уникальная комбинация: <strong>компания + материал + размер + владение</strong>. Пример: «Энергоинвест / Труба / 530x6 / Наш товар» — это одна позиция. По ней считается баланс. Позиции создаются автоматически при первом движении.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-line"><div class="dot" style="background:var(--accent2);">2</div><div class="line"></div></div>
+      <div class="flow-content">
+        <h3>Владение</h3>
+        <p><strong>Наш товар</strong> — металл принадлежит нам, мы его купили. <strong>Товар клиента</strong> — металл клиента, мы его просто храним на своём складе. Важно для разделения в остатках.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-line"><div class="dot" style="background:var(--accent2);">3</div><div class="line"></div></div>
+      <div class="flow-content">
+        <h3>Приход и расход</h3>
+        <p><strong>Приход</strong> — металл пришёл на склад (купили, получили). <strong>Расход</strong> — металл ушёл со склада (продали, отгрузили). Баланс = сумма приходов минус сумма расходов.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-line"><div class="dot" style="background:var(--green);">4</div><div class="line"></div></div>
+      <div class="flow-content">
+        <h3>Цена за тонну и сумма сделки</h3>
+        <p>При каждом движении указывается цена за тонну. Система сама умножает на вес и получает сумму сделки. По этим суммам считаются закупки, продажи и прибыль.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-line"><div class="dot" style="background:var(--green);">5</div></div>
+      <div class="flow-content">
+        <h3>Средняя цена закупки</h3>
+        <p>Используется для оценки стоимости остатка. Если купил 10 т по 50 000 и 5 т по 60 000, средняя = (500 000 + 300 000) / 15 = 53 333 руб/т. Стоимость остатка 8 т = 8 x 53 333 = 426 667 руб.</p>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- =========================================== -->
+<!-- 14. RESET -->
+<!-- =========================================== -->
+<section id="reset" style="background:var(--surface);">
+<div class="container">
+  <h2>14. Как удалить все данные</h2>
+  <p class="subtitle">Полная очистка. Все движения, расходы, работы, остатки — обнулятся. Справочники (компании, материалы, тарифы) можно оставить или тоже удалить.</p>
+
+  <div class="callout warn">
+    <strong>Внимание. Это необратимо.</strong> После выполнения данные восстановить невозможно. Делай только если точно уверен, что хочешь начать с чистого листа.
+  </div>
+
+  <h3 style="font-size:0.95rem; margin-bottom:1rem;">Пошагово</h3>
+  <div class="flow">
+    <div class="flow-step">
+      <div class="flow-line"><div class="dot" style="background:var(--accent);">1</div><div class="line"></div></div>
+      <div class="flow-content">
+        <h3>Открой Supabase Dashboard</h3>
+        <p>Зайди на <strong>supabase.com</strong>, выбери свой проект. В левом меню нажми <strong>SQL Editor</strong>.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-line"><div class="dot" style="background:var(--accent);">2</div><div class="line"></div></div>
+      <div class="flow-content">
+        <h3>Выбери, что удалить</h3>
+        <p>Ниже — три варианта SQL-запросов. Скопируй нужный, вставь в SQL Editor, нажми <strong>Run</strong>.</p>
+      </div>
+    </div>
+    <div class="flow-step">
+      <div class="flow-line"><div class="dot" style="background:var(--green);">3</div></div>
+      <div class="flow-content">
+        <h3>Обнови приложение</h3>
+        <p>Вернись в MetalTrack Pro и обнови страницу (F5 или потяни вниз на телефоне). Данные исчезнут. Можно начинать заново.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="sep"></div>
+
+  <h3 style="font-size:0.95rem; margin-bottom:0.75rem;">Вариант А — удалить только операции (движения, расходы, работы)</h3>
+  <p style="color:var(--muted); font-size:0.88rem; margin-bottom:0.75rem;">Справочники (компании, материалы, тарифы) останутся на месте. Удалятся все движения, расходы, работы, история и остатки.</p>
+  <div style="background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:1.25rem; margin-bottom:1.5rem; overflow-x:auto;">
+    <pre style="color:var(--text); font-size:0.82rem; line-height:1.6; white-space:pre; margin:0; font-family:'Courier New',monospace;">-- Вариант А: удалить операции, оставить справочники
+DELETE FROM public.audit_log;
+DELETE FROM public.work_logs;
+DELETE FROM public.expenses;
+DELETE FROM public.movements;
+DELETE FROM public.positions;</pre>
+  </div>
+
+  <h3 style="font-size:0.95rem; margin-bottom:0.75rem;">Вариант Б — удалить вообще всё (полный сброс)</h3>
+  <p style="color:var(--muted); font-size:0.88rem; margin-bottom:0.75rem;">Удалятся и операции, и справочники. Останутся только пользователи. Система будет как новая.</p>
+  <div style="background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:1.25rem; margin-bottom:1.5rem; overflow-x:auto;">
+    <pre style="color:var(--text); font-size:0.82rem; line-height:1.6; white-space:pre; margin:0; font-family:'Courier New',monospace;">-- Вариант Б: полный сброс (кроме пользователей)
+DELETE FROM public.audit_log;
+DELETE FROM public.work_logs;
+DELETE FROM public.expenses;
+DELETE FROM public.movements;
+DELETE FROM public.positions;
+DELETE FROM public.service_rates;
+DELETE FROM public.materials;
+DELETE FROM public.companies;</pre>
+  </div>
+
+  <h3 style="font-size:0.95rem; margin-bottom:0.75rem;">Вариант В — удалить данные по одной таблице</h3>
+  <p style="color:var(--muted); font-size:0.88rem; margin-bottom:0.75rem;">Если хочешь удалить только конкретный раздел — используй одну строку:</p>
+  <div style="overflow-x:auto;">
+  <table class="field-table">
+    <thead><tr><th>Что удалить</th><th>SQL-запрос</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Все движения + остатки</strong></td><td><code>DELETE FROM public.movements; DELETE FROM public.positions;</code></td></tr>
+      <tr><td><strong>Все расходы</strong></td><td><code>DELETE FROM public.expenses;</code></td></tr>
+      <tr><td><strong>Все работы</strong></td><td><code>DELETE FROM public.work_logs;</code></td></tr>
+      <tr><td><strong>Всю историю (аудит)</strong></td><td><code>DELETE FROM public.audit_log;</code></td></tr>
+      <tr><td><strong>Все компании</strong></td><td>Сначала удали движения, работы, расходы — потом <code>DELETE FROM public.companies;</code></td></tr>
+      <tr><td><strong>Все материалы</strong></td><td>Сначала удали движения, работы — потом <code>DELETE FROM public.materials;</code></td></tr>
+      <tr><td><strong>Все тарифы</strong></td><td>Сначала удали работы — потом <code>DELETE FROM public.service_rates;</code></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="callout info">
+    <strong>Порядок важен.</strong> Нельзя удалить компании, пока есть движения, которые на них ссылаются. Поэтому сначала удаляй данные (движения, работы, расходы), потом справочники. В вариантах А и Б порядок уже правильный — просто копируй и выполняй.
+  </div>
+
+  <div class="callout">
+    <strong>Пользователи не удаляются.</strong> Все аккаунты (логины/пароли) остаются. Удалить пользователя можно только через Supabase Dashboard, раздел Authentication.
+  </div>
+</div>
+</section>
+
+<!-- =========================================== -->
+<!-- 15. FAQ -->
+<!-- =========================================== -->
+<section id="faq">
+<div class="container">
+  <h2>15. Частые вопросы</h2>
+  <p class="subtitle">Нажми на вопрос, чтобы раскрыть ответ.</p>
+
+  <details>
+    <summary>Добавил движение без цены. Что делать?</summary>
+    <div class="answer">Ничего страшного — цена будет 0, сумма 0. В финансовой сводке эта запись просто не учтётся в деньгах, но вес посчитается. Можно удалить и создать заново с правильной ценой.</div>
+  </details>
+  <details>
+    <summary>Как увидеть, сколько металла у Энергоинвеста?</summary>
+    <div class="answer">Два варианта. Первый: раздел «Деньги» — таблица «По компаниям», строка «Энергоинвест» (остаток в тоннах и стоимость). Второй: раздел «Остатки» — включи режим «Разбить по компаниям».</div>
+  </details>
+  <details>
+    <summary>Как посмотреть прибыль?</summary>
+    <div class="answer">Раздел «Деньги» — карточка «Прибыль» вверху. Или раздел «Главная» — там тоже есть карточка с прибылью. Формула: Продажи - Закупки - Расходы.</div>
+  </details>
+  <details>
+    <summary>В чём разница между «Работами» и «Расходами»?</summary>
+    <div class="answer">«Работы» — это конкретные услуги по тарифу (резка 1500 руб/тн, сварка 800 руб/шт). Количество x тариф = сумма. «Расходы» — это любые затраты произвольной суммы: транспорт, аренда, зарплата. Они не зависят от тарифов.</div>
+  </details>
+  <details>
+    <summary>Могу ли я отредактировать уже созданное движение?</summary>
+    <div class="answer">Нет, редактирование движений пока не поддерживается. Удали запись и создай новую с правильными данными. Остаток пересчитается автоматически.</div>
+  </details>
+  <details>
+    <summary>Что будет, если удалить компанию, которая используется в движениях?</summary>
+    <div class="answer">Система не даст удалить компанию, если к ней привязаны записи. Сначала нужно удалить или перенести все связанные записи. Или просто сделай компанию неактивной — она исчезнет из выпадающих списков, но старые записи останутся.</div>
+  </details>
+  <details>
+    <summary>Баланс ушёл в минус. Это нормально?</summary>
+    <div class="answer">Система разрешает отрицательный баланс, но предупреждает. Это может быть ошибкой (забыли записать приход) или осознанным действием (продали заранее, приход ещё не оформлен). Проверь записи по этой позиции.</div>
+  </details>
+  <details>
+    <summary>Как работает приложение на телефоне?</summary>
+    <div class="answer">Открывай по той же ссылке. Внизу экрана — панель навигации (Главная, Движение, Остатки, Деньги, Ещё). Таблицы превращаются в карточки. Всё остальное работает так же.</div>
+  </details>
+  <details>
+    <summary>Как выгрузить данные в Excel?</summary>
+    <div class="answer">Раздел «Остатки» — кнопка «Экспорт CSV». Скачается файл, который открывается в Excel. Пока экспорт доступен только для остатков.</div>
+  </details>
+  <details>
+    <summary>Кто может менять справочники (компании, материалы, тарифы)?</summary>
+    <div class="answer">Только пользователь с ролью «Админ». Оператор видит справочники, но не может их менять.</div>
+  </details>
+</div>
+</section>
+
+<footer>
+  <div class="container">
+    MetalTrack Pro — полное руководство по системе<br>
+    <span style="opacity:0.5;">2026</span>
+  </div>
+</footer>
+
+<script>
+document.querySelectorAll('.toc-list a').forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    const target = document.querySelector(a.getAttribute('href'));
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+});
+</script>
+</body>
+</html>
