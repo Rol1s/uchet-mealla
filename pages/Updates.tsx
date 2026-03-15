@@ -1,5 +1,5 @@
 import React from 'react';
-import { Megaphone, Sparkles, Package, Banknote, Edit3, Rocket } from 'lucide-react';
+import { Megaphone, Sparkles, Package, Banknote, Edit3, Rocket, Ruler } from 'lucide-react';
 
 interface UpdateCardProps {
   version: string;
@@ -87,14 +87,37 @@ const Updates: React.FC = () => {
 
       <div className="space-y-4">
 
+        {/* v2.5 */}
+        <UpdateCard
+          version="v2.5"
+          date="15 марта 2026"
+          title="Погонные метры и галочка погрузки"
+          color="purple"
+          icon={<Ruler size={20} />}
+          isLatest
+        >
+          <ChangeItem title="Движение металла — новые поля">
+            <ul className="list-disc list-inside space-y-0.5">
+              <li><strong>Погонные метры</strong> — новое поле рядом с весом. Указывается опционально, удобно для учёта труб по метражу.</li>
+              <li><strong>Галочка «Погр./разгр. работы»</strong> — если отмечено, появляется поле с авторасчётом (1000 ₽ × вес). Если не отмечено — стоимость погрузки = 0.</li>
+            </ul>
+          </ChangeItem>
+          <ChangeItem title="Компактная таблица">
+            <ul className="list-disc list-inside space-y-0.5">
+              <li>Сужена колонка «Поставщик/Покупатель» → «Пост./Пок.»</li>
+              <li>Уменьшены отступы — больше данных помещается на экран</li>
+              <li>Добавлена колонка «Метры» в таблице</li>
+            </ul>
+          </ChangeItem>
+        </UpdateCard>
+
         {/* v2.4 */}
         <UpdateCard
           version="v2.4"
-          date="15 марта 2026, вечер"
+          date="15 марта 2026"
           title="Упрощение интерфейса"
-          color="purple"
+          color="green"
           icon={<Sparkles size={20} />}
-          isLatest
         >
           <ChangeItem title="Движение металла">
             <ul className="list-disc list-inside space-y-0.5">
@@ -112,9 +135,9 @@ const Updates: React.FC = () => {
         {/* v2.3 */}
         <UpdateCard
           version="v2.3"
-          date="15 марта 2026, день"
+          date="15 марта 2026"
           title="Поставщик, Покупатель, Куда"
-          color="green"
+          color="slate"
           icon={<Package size={20} />}
         >
           <ChangeItem title="Новые поля в движении металла">

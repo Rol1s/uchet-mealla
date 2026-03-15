@@ -65,6 +65,7 @@ export interface Movement {
   position_id: string;
   operation: OperationType;
   weight: number;
+  linear_meters: number | null;
   cost: number;
   price_per_ton: number;
   total_value: number;
@@ -156,6 +157,7 @@ export interface MovementInput {
   ownership: OwnershipType;
   operation: OperationType;
   weight: number;
+  linear_meters: number;
   cost: number;
   price_per_ton: number;
   payment_method: PaymentMethodType;

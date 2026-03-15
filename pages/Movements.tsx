@@ -26,6 +26,7 @@ const Movements: React.FC = () => {
     size: '',
     ownership: 'own',
     weight: 0,
+    linear_meters: 0,
     cost: 0,
     price_per_ton: 0,
     payment_method: 'cashless',
@@ -37,7 +38,7 @@ const Movements: React.FC = () => {
 
   const [formState, setFormState] = useState<MovementInput>(getEmptyForm);
   const [formDirty, setFormDirty] = useState(false);
-  const [costManuallyEdited, setCostManuallyEdited] = useState(false);
+  const [hasLoadingCost, setHasLoadingCost] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -72,7 +73,7 @@ const Movements: React.FC = () => {
     setEditingId(null);
     setFormState(getEmptyForm());
     setFormDirty(false);
-    setCostManuallyEdited(false);
+    setHasLoadingCost(false);
   }, [getEmptyForm]);
 
   const requestCloseModal = useCallback(() => {
@@ -84,7 +85,7 @@ const Movements: React.FC = () => {
     setEditingId(null);
     setFormState(getEmptyForm());
     setFormDirty(false);
-    setCostManuallyEdited(false);
+    setHasLoadingCost(false);
     setIsModalOpen(true);
   }, [getEmptyForm]);
 
@@ -98,6 +99,7 @@ const Movements: React.FC = () => {
       size: m.position?.size ?? '',
       ownership: (m.position?.ownership as OwnershipType) ?? 'own',
       weight: m.weight,
+      linear_meters: m.linear_meters ?? 0,
       cost: m.cost ?? 0,
       price_per_ton: m.price_per_ton ?? 0,
       payment_method: (m.payment_method as PaymentMethodType) ?? 'cashless',
@@ -107,26 +109,38 @@ const Movements: React.FC = () => {
       note: m.note ?? '',
     });
     setFormDirty(false);
-    setCostManuallyEdited(true);
+    setHasLoadingCost((m.cost ?? 0) > 0);
     setIsModalOpen(true);
   }, []);
 
   const updateFormField = useCallback(<K extends keyof MovementInput>(field: K, value: MovementInput[K]) => {
     setFormState(prev => {
       const next = { ...prev, [field]: value };
-      if (field === 'weight' && !costManuallyEdited) {
-        next.cost = Math.round((value as number) * LOADING_COST_PER_TON);
+      return next;
+    });
+    setFormDirty(true);
+  }, []);
+
+  const toggleLoadingCost = useCallback((enabled: boolean) => {
+    setHasLoadingCost(enabled);
+    if (enabled) {
+      setFormState(prev => ({ ...prev, cost: Math.round(prev.weight * LOADING_COST_PER_TON) }));
+    } else {
+      setFormState(prev => ({ ...prev, cost: 0 }));
+    }
+    setFormDirty(true);
+  }, []);
+
+  const handleWeightChange = useCallback((value: number) => {
+    setFormState(prev => {
+      const next = { ...prev, weight: value };
+      if (hasLoadingCost) {
+        next.cost = Math.round(value * LOADING_COST_PER_TON);
       }
       return next;
     });
     setFormDirty(true);
-  }, [costManuallyEdited]);
-
-  const handleCostChange = useCallback((value: number) => {
-    setFormState(prev => ({ ...prev, cost: value }));
-    setCostManuallyEdited(true);
-    setFormDirty(true);
-  }, []);
+  }, [hasLoadingCost]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -137,7 +151,8 @@ const Movements: React.FC = () => {
           movement_date: formState.movement_date,
           operation: formState.operation,
           weight: formState.weight,
-          cost: formState.cost,
+          linear_meters: formState.linear_meters || null,
+          cost: hasLoadingCost ? formState.cost : 0,
           price_per_ton: formState.price_per_ton,
           note: formState.note,
           payment_method: formState.payment_method,
@@ -323,7 +338,9 @@ const Movements: React.FC = () => {
                 </div>
               )}
               <div className="flex justify-between items-center text-sm">
-                <span className="font-medium text-slate-800">Вес: {item.weight} т</span>
+                <span className="font-medium text-slate-800">
+                  Вес: {item.weight} т{item.linear_meters ? ` · ${item.linear_meters} м` : ''}
+                </span>
                 {item.price_per_ton ? (
                   <span className="text-slate-500">{item.price_per_ton.toLocaleString('ru-RU')} ₽/т</span>
                 ) : null}
@@ -373,20 +390,21 @@ const Movements: React.FC = () => {
           <table className="w-full text-sm text-left">
             <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
               <tr>
-                <th className="px-3 py-3 whitespace-nowrap">Дата</th>
-                <th className="px-3 py-3 whitespace-nowrap">Компания</th>
-                <th className="px-3 py-3 whitespace-nowrap">Операция</th>
-                <th className="px-3 py-3 whitespace-nowrap">Материал</th>
-                <th className="px-3 py-3 whitespace-nowrap">Размер</th>
-                <th className="px-3 py-3 whitespace-nowrap">Поставщик/Покупатель</th>
-                <th className="px-3 py-3 whitespace-nowrap">Куда</th>
-                <th className="px-3 py-3 text-right whitespace-nowrap">Вес (т)</th>
-                <th className="px-3 py-3 text-right whitespace-nowrap">Цена/т</th>
-                <th className="px-3 py-3 text-right whitespace-nowrap bg-blue-50/50">Сумма</th>
-                <th className="px-3 py-3 text-right whitespace-nowrap">Погр./Разгр.</th>
-                <th className="px-3 py-3 whitespace-nowrap">Оплата</th>
-                <th className="px-3 py-3 whitespace-nowrap">Примечание</th>
-                <th className="px-3 py-3 text-center">Действия</th>
+                <th className="px-2 py-3 whitespace-nowrap">Дата</th>
+                <th className="px-2 py-3 whitespace-nowrap">Компания</th>
+                <th className="px-2 py-3 whitespace-nowrap">Операция</th>
+                <th className="px-2 py-3 whitespace-nowrap">Материал</th>
+                <th className="px-2 py-3 whitespace-nowrap">Размер</th>
+                <th className="px-2 py-3 whitespace-nowrap max-w-[100px]">Пост./Пок.</th>
+                <th className="px-2 py-3 whitespace-nowrap">Куда</th>
+                <th className="px-2 py-3 text-right whitespace-nowrap">Вес (т)</th>
+                <th className="px-2 py-3 text-right whitespace-nowrap">Метры</th>
+                <th className="px-2 py-3 text-right whitespace-nowrap">Цена/т</th>
+                <th className="px-2 py-3 text-right whitespace-nowrap bg-blue-50/50">Сумма</th>
+                <th className="px-2 py-3 text-right whitespace-nowrap">Погр.</th>
+                <th className="px-2 py-3 whitespace-nowrap">Оплата</th>
+                <th className="px-2 py-3 whitespace-nowrap">Примечание</th>
+                <th className="px-2 py-3 text-center"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -399,64 +417,67 @@ const Movements: React.FC = () => {
               ) : (
                 filteredMovements.map((item) => (
                   <tr key={item.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-3 py-2">
+                    <td className="px-2 py-2 text-sm">
                       {new Date(item.movement_date).toLocaleDateString('ru-RU')}
                     </td>
-                    <td className="px-3 py-2 font-medium text-slate-700">
+                    <td className="px-2 py-2 font-medium text-slate-700 text-sm">
                       {item.position?.company?.name || '—'}
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="px-2 py-2">
                       <span
-                        className={`badge ${
+                        className={`badge text-xs ${
                           item.operation === 'income' ? 'badge-green' : 'badge-red'
                         }`}
                       >
                         {item.operation === 'income' ? 'Приход' : 'Расход'}
                       </span>
                     </td>
-                    <td className="px-3 py-2">{item.position?.material?.name || '—'}</td>
-                    <td className="px-3 py-2">{item.position?.size || '—'}</td>
-                    <td className="px-3 py-2 text-slate-600">
+                    <td className="px-2 py-2 text-sm">{item.position?.material?.name || '—'}</td>
+                    <td className="px-2 py-2 text-sm">{item.position?.size || '—'}</td>
+                    <td className="px-2 py-2 text-slate-600 text-sm truncate max-w-[100px]" title={item.operation === 'income' ? (item.supplier?.name || '') : (item.buyer?.name || '')}>
                       {item.operation === 'income' 
                         ? (item.supplier?.name || '—')
                         : (item.buyer?.name || '—')
                       }
                     </td>
-                    <td className="px-3 py-2 text-slate-600">{item.destination || '—'}</td>
-                    <td className="px-3 py-2 text-right font-medium">{item.weight}</td>
-                    <td className="px-3 py-2 text-right text-slate-500">
+                    <td className="px-2 py-2 text-slate-600 text-sm">{item.destination || '—'}</td>
+                    <td className="px-2 py-2 text-right font-medium text-sm">{item.weight}</td>
+                    <td className="px-2 py-2 text-right text-slate-500 text-sm">
+                      {item.linear_meters ? item.linear_meters : '—'}
+                    </td>
+                    <td className="px-2 py-2 text-right text-slate-500 text-sm">
                       {item.price_per_ton ? item.price_per_ton.toLocaleString('ru-RU') : '—'}
                     </td>
-                    <td className="px-3 py-2 text-right font-bold bg-blue-50/30 text-slate-800">
+                    <td className="px-2 py-2 text-right font-bold bg-blue-50/30 text-slate-800 text-sm">
                       {item.total_value ? item.total_value.toLocaleString('ru-RU') : '—'}
                     </td>
-                    <td className="px-3 py-2 text-right text-slate-500">
+                    <td className="px-2 py-2 text-right text-slate-500 text-sm">
                       {item.cost ? item.cost.toLocaleString('ru-RU') : '—'}
                     </td>
-                    <td className="px-3 py-2 text-slate-600">
+                    <td className="px-2 py-2 text-slate-600 text-sm">
                       {item.payment_method === 'cash' ? 'Нал' : 'Безнал'}
                     </td>
-                    <td className="px-3 py-2 text-slate-500 truncate max-w-[150px]" title={item.note || ''}>
+                    <td className="px-2 py-2 text-slate-500 truncate max-w-[120px] text-sm" title={item.note || ''}>
                       {item.note || '—'}
                     </td>
-                    <td className="px-3 py-2 text-center">
+                    <td className="px-2 py-2 text-center">
                       {(isAdmin || item.created_by === user?.id) && (
-                        <>
+                        <div className="flex items-center justify-center gap-0.5">
                           <button
                             onClick={() => openEdit(item)}
-                            className="text-slate-400 hover:text-blue-600 transition-colors p-1 mr-1"
+                            className="text-slate-400 hover:text-blue-600 transition-colors p-1"
                             title="Редактировать"
                           >
-                            <Edit2 size={16} />
+                            <Edit2 size={14} />
                           </button>
                           <button
                             onClick={() => handleDelete(item.id, item.created_by)}
                             className="text-slate-400 hover:text-red-600 transition-colors p-1"
                             title="Удалить"
                           >
-                            <Trash2 size={16} />
+                            <Trash2 size={14} />
                           </button>
-                        </>
+                        </div>
                       )}
                     </td>
                   </tr>
@@ -638,7 +659,18 @@ const Movements: React.FC = () => {
                   placeholder="Введите вес"
                   className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
                   value={formState.weight || ''}
-                  onChange={(e) => updateFormField('weight', parseFloat(e.target.value) || 0)}
+                  onChange={(e) => handleWeightChange(parseFloat(e.target.value) || 0)}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Погонные метры</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  placeholder="Опционально"
+                  className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
+                  value={formState.linear_meters || ''}
+                  onChange={(e) => updateFormField('linear_meters', parseFloat(e.target.value) || 0)}
                 />
               </div>
               <div>
@@ -659,16 +691,30 @@ const Movements: React.FC = () => {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Стоимость погр./разгр. <span className="text-slate-400 font-normal">(авто: 1000×вес)</span>
-                </label>
-                <input
-                  type="number"
-                  placeholder="Введите стоимость"
-                  className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
-                  value={formState.cost || ''}
-                  onChange={(e) => handleCostChange(parseFloat(e.target.value) || 0)}
-                />
+                <div className="flex items-center gap-2 mb-1">
+                  <input
+                    type="checkbox"
+                    id="hasLoadingCost"
+                    checked={hasLoadingCost}
+                    onChange={(e) => toggleLoadingCost(e.target.checked)}
+                    className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <label htmlFor="hasLoadingCost" className="text-sm font-medium text-slate-700 cursor-pointer">
+                    Погр./разгр. работы
+                  </label>
+                </div>
+                {hasLoadingCost && (
+                  <div className="mt-2">
+                    <input
+                      type="number"
+                      placeholder="Авто: 1000×вес"
+                      className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
+                      value={formState.cost || ''}
+                      onChange={(e) => updateFormField('cost', parseFloat(e.target.value) || 0)}
+                    />
+                    <p className="text-xs text-slate-400 mt-1">Авто: {Math.round(formState.weight * LOADING_COST_PER_TON).toLocaleString('ru-RU')} ₽</p>
+                  </div>
+                )}
               </div>
               <div className="sm:col-span-2">
                 <label className="block text-sm font-medium text-slate-700 mb-1">Примечание</label>
