@@ -17,6 +17,7 @@ const Expenses = lazy(() => import('./pages/Expenses'));
 const Money = lazy(() => import('./pages/Money'));
 const History = lazy(() => import('./pages/History'));
 const Help = lazy(() => import('./pages/Help'));
+const Updates = lazy(() => import('./pages/Updates'));
 
 const PageFallback: React.FC = () => (
   <div className="flex items-center justify-center min-h-[200px]">
@@ -62,6 +63,7 @@ const App: React.FC = () => (
           <Route path="/companies" element={<Companies />} />
           <Route path="/materials" element={<Materials />} />
           <Route path="/help" element={<Help />} />
+          <Route path="/updates" element={<Updates />} />
         </Route>
 
         <Route element={<AdminLayout />}>

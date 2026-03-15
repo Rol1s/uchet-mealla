@@ -60,6 +60,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { to: '/companies', label: 'Компании', icon: Building2 },
     { to: '/materials', label: 'Материалы', icon: Boxes },
     { to: '/rates', label: 'Тарифы', icon: Book },
+    { to: '/updates', label: 'Обновления', icon: Megaphone },
     { to: '/help', label: 'База знаний', icon: HelpCircle },
     ...(isAdmin ? [{ to: '/history', label: 'История', icon: History }] : []),
   ];
@@ -191,10 +192,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   <p className="text-blue-800 mt-0.5">Убрана колонка «Владение» из движений. В остатках вместо «Клиента» теперь показывается название компании (Энергоинвест).</p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <NavLink
-                      to="/help?scroll=updates"
+                      to="/updates"
                       className="text-blue-700 font-medium underline hover:no-underline"
                     >
-                      Подробнее — что изменилось
+                      Все обновления
                     </NavLink>
                     <span className="text-blue-400">·</span>
                     <button
