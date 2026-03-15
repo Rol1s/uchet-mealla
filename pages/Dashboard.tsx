@@ -302,7 +302,7 @@ const Dashboard: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <span className={`w-2 h-2 rounded-full ${m.operation === 'income' ? 'bg-green-500' : 'bg-red-500'}`} />
                     <span className="text-sm text-slate-600">
-                      {m.position?.material?.name || '—'}
+                      {m.position?.material?.name || '—'}{m.position?.size ? ` ${m.position.size}` : ''}
                     </span>
                     <span className="text-xs text-slate-400">
                       {new Date(m.movement_date).toLocaleDateString('ru-RU')}
