@@ -413,13 +413,16 @@ export async function getExpenses(): Promise<Expense[]> {
     .from('expenses')
     .select(`
       *,
-      company:companies(*),
+      company:companies!company_id(*),
       payer:companies!payer_id(*),
       recipient:companies!recipient_id(*),
       user:users(name, email)
     `)
     .order('expense_date', { ascending: false });
-  if (error) throw normalizeDbError(error);
+  if (error) {
+    console.error('getExpenses error:', error);
+    throw normalizeDbError(error);
+  }
   return data || [];
 }
 

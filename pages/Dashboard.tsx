@@ -258,10 +258,9 @@ const Dashboard: React.FC = () => {
           <div className="text-slate-300 mb-6">
             <p className="mb-2">Используйте меню слева для навигации.</p>
             <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
-              <li><strong>"Движение"</strong> — учет прихода/расхода металла с ценами</li>
+              <li><strong>"Движение"</strong> — учёт прихода/расхода металла с ценами</li>
               <li><strong>"Остатки"</strong> — автоматический остаток на складе</li>
-              <li><strong>"Расходы"</strong> — транспорт, погрузка, обработка, аренда</li>
-              <li><strong>"Деньги"</strong> — финансовая сводка и прибыль по компаниям</li>
+              <li><strong>"Финансы"</strong> — приходы/расходы денег, нал/безнал</li>
             </ul>
           </div>
         </div>
