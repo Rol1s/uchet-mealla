@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Material } from '../types';
 import { getMaterials, createMaterial, updateMaterial, deleteMaterial } from '../services/supabase';
+import { useConfirm } from '../hooks/useConfirm';
 import { useAuth } from '../context/AuthContext';
 import { Plus, Trash2, Edit2, Save, X, Boxes, Loader2 } from 'lucide-react';
 
 const Materials: React.FC = () => {
   const { isAdmin } = useAuth();
+  const { confirm, confirmDialog } = useConfirm();
   const [materials, setMaterials] = useState<Material[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +38,7 @@ const Materials: React.FC = () => {
   }, [showInactive]);
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Удалить материал? Это может повлиять на связанные записи.')) return;
+    if (!await confirm('Удалить материал?', 'Это может повлиять на связанные записи.', 'danger')) return;
     try {
       await deleteMaterial(id);
       setMaterials((prev) => prev.filter((m) => m.id !== id));
@@ -320,6 +322,7 @@ const Materials: React.FC = () => {
           </table>
         </div>
       </div>
+      {confirmDialog}
     </div>
   );
 };

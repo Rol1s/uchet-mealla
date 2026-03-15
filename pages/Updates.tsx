@@ -1,5 +1,5 @@
 import React from 'react';
-import { Megaphone, Sparkles, Package, Banknote, Edit3, Rocket, Ruler, Wallet, Calendar, FileSpreadsheet, LayoutDashboard } from 'lucide-react';
+import { Megaphone, Sparkles, Package, Banknote, Edit3, Rocket, Ruler, Wallet, Calendar, FileSpreadsheet, LayoutDashboard, Wrench } from 'lucide-react';
 
 interface UpdateCardProps {
   version: string;
@@ -87,6 +87,51 @@ const Updates: React.FC = () => {
 
       <div className="space-y-4">
 
+        {/* v2.9 */}
+        <UpdateCard
+          version="v2.9"
+          date="15 марта 2026"
+          title="Рефакторинг: чистый код, новые компоненты"
+          color="blue"
+          icon={<Wrench size={20} />}
+          isLatest
+        >
+          <ChangeItem title="Удалён мёртвый код">
+            <p>Удалены неиспользуемые страницы Money.tsx и Expenses.tsx (~950 строк). Вся функциональность давно перенесена в Финансы и Дашборд.</p>
+          </ChangeItem>
+          <ChangeItem title="Компонент ConfirmDialog">
+            <ul className="list-disc list-inside space-y-0.5">
+              <li>Все системные <code>window.confirm</code> заменены на красивые модальные окна</li>
+              <li>Удаление — красный акцент, закрытие без сохранения — предупреждение</li>
+              <li>Работает через хук <code>useConfirm()</code></li>
+            </ul>
+          </ChangeItem>
+          <ChangeItem title="Компонент Combobox (выбор или создание)">
+            <ul className="list-disc list-inside space-y-0.5">
+              <li>Переиспользуемый компонент вместо дублированного кода</li>
+              <li>Используется: Поставщик, Покупатель (Движение), Контрагент (Финансы)</li>
+              <li>Поиск, выбор, создание новой компании — всё в одном</li>
+            </ul>
+          </ChangeItem>
+          <ChangeItem title="Редактирование работ">
+            <ul className="list-disc list-inside space-y-0.5">
+              <li>Теперь записи о работах можно редактировать, а не только удалять</li>
+              <li>Кнопка редактирования в таблице и мобильных карточках</li>
+              <li>Защита от потери данных при закрытии формы</li>
+            </ul>
+          </ChangeItem>
+          <ChangeItem title="Обновлена База знаний">
+            <p>Все упоминания «Расходы» и «Деньги» обновлены на актуальные «Финансы» и «Дашборд». Убран хардкод компании.</p>
+          </ChangeItem>
+          <ChangeItem title="Чистка кода">
+            <ul className="list-disc list-inside space-y-0.5">
+              <li>Общие константы (категории) вынесены в отдельный модуль</li>
+              <li>Убраны debug-логи из production-сборки</li>
+              <li>Убраны неиспользуемые импорты</li>
+            </ul>
+          </ChangeItem>
+        </UpdateCard>
+
         {/* v2.8 */}
         <UpdateCard
           version="v2.8"
@@ -94,7 +139,6 @@ const Updates: React.FC = () => {
           title="Финансы: упрощение + исправления"
           color="purple"
           icon={<Wallet size={20} />}
-          isLatest
         >
           <ChangeItem title="Контрагент вместо Плательщик/Получатель">
             <ul className="list-disc list-inside space-y-0.5">

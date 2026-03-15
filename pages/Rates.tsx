@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { ServiceRate } from '../types';
 import { getServiceRates, createServiceRate, updateServiceRate, deleteServiceRate } from '../services/supabase';
+import { useConfirm } from '../hooks/useConfirm';
 import { useAuth } from '../context/AuthContext';
 import { Plus, Trash2, Edit2, Save, X, Loader2, Book } from 'lucide-react';
 
 const Rates: React.FC = () => {
   const { isAdmin } = useAuth();
+  const { confirm, confirmDialog } = useConfirm();
   const [rates, setRates] = useState<ServiceRate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +38,7 @@ const Rates: React.FC = () => {
   }, [showInactive]);
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Вы уверены? Это может повлиять на расчеты работ.')) return;
+    if (!await confirm('Удалить тариф?', 'Это может повлиять на расчёты работ.', 'danger')) return;
     try {
       await deleteServiceRate(id);
       setRates((prev) => prev.filter((r) => r.id !== id));
@@ -80,9 +82,7 @@ const Rates: React.FC = () => {
       setRates((prev) => [...prev, newRate]);
       startEdit(newRate);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Ошибка создания';
-      setError(msg);
-      console.error('createServiceRate:', err);
+      setError(err instanceof Error ? err.message : 'Ошибка создания');
     }
   };
 
@@ -356,6 +356,7 @@ const Rates: React.FC = () => {
           </table>
         </div>
       </div>
+      {confirmDialog}
     </div>
   );
 };

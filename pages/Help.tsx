@@ -190,7 +190,7 @@ const ONBOARDING_STEPS: OnboardingStepData[] = [
   },
   {
     title: 'Записываем расход (доставка)',
-    where: 'Боковое меню → Расходы → кнопка «Добавить расход»',
+    where: 'Боковое меню → Финансы → кнопка «Добавить»',
     action: 'Заплатили за доставку трубы. Запишем.',
     fields: [
       { label: 'Дата', value: 'Сегодня' },
@@ -215,8 +215,8 @@ const ONBOARDING_STEPS: OnboardingStepData[] = [
     tip: 'Работы учитываются отдельно от расходов. Это выручка за услугу, а не затрата.',
   },
   {
-    title: 'Смотрим результат — Деньги',
-    where: 'Боковое меню → Деньги',
+    title: 'Смотрим результат — Дашборд',
+    where: 'Боковое меню → Дашборд (Главная)',
     action: 'Просто открой и посмотри. Ничего вводить не надо.',
     result: 'Закупки: 850 000 руб (10т x 55 000 + 5т x 60 000). Продажи: 490 000 руб (7т x 70 000). Расходы: 25 000 руб. Прибыль: 490 000 - 850 000 - 25 000 = -385 000 руб (минус, потому что мы купили больше, чем продали — на складе ещё 8 тонн).',
     tip: 'В таблице «По компаниям» видно: Энергоинвест — закупки 850 000, остаток 8 тонн. Никамет — продажи 490 000.',
@@ -419,8 +419,8 @@ const Help: React.FC = () => {
     { id: 'dashboard', title: '3. Главная' },
     { id: 'movements', title: '4. Движение металла' },
     { id: 'inventory', title: '5. Остатки на складе' },
-    { id: 'expenses', title: '6. Расходы' },
-    { id: 'money', title: '7. Деньги (финансовая сводка)' },
+    { id: 'finance', title: '6. Финансы' },
+    { id: 'dashboard', title: '7. Дашборд' },
     { id: 'works', title: '8. Работы' },
     { id: 'companies', title: '9. Компании' },
     { id: 'materials', title: '10. Материалы' },
@@ -532,8 +532,8 @@ const Help: React.FC = () => {
             <h4 className="font-semibold text-sm text-blue-700 mb-2">Оператор может</h4>
             <ul className="text-sm text-slate-600 space-y-1">
               <li className="flex items-start gap-2"><span className="w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5 flex-shrink-0" />Добавлять движения (приход/расход)</li>
-              <li className="flex items-start gap-2"><span className="w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5 flex-shrink-0" />Добавлять расходы и работы</li>
-              <li className="flex items-start gap-2"><span className="w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5 flex-shrink-0" />Смотреть остатки, деньги, справочники</li>
+              <li className="flex items-start gap-2"><span className="w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5 flex-shrink-0" />Добавлять финансовые записи и работы</li>
+              <li className="flex items-start gap-2"><span className="w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5 flex-shrink-0" />Смотреть остатки, дашборд, справочники</li>
               <li className="flex items-start gap-2"><span className="w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5 flex-shrink-0" />Удалять только <strong>свои</strong> записи</li>
             </ul>
           </div>
@@ -677,13 +677,13 @@ const Help: React.FC = () => {
       </Section>
 
       {/* ========== 6. EXPENSES ========== */}
-      <Section id="expenses" icon={<Receipt size={20} />} title="6. Расходы">
+      <Section id="finance" icon={<Receipt size={20} />} title="6. Финансы">
         <p className="text-sm text-slate-600 mt-3">Все затраты, не связанные с покупкой/продажей: транспорт, аренда, зарплата.</p>
 
         <h4 className="font-semibold text-sm text-slate-700 mt-4">Как добавить</h4>
         <Step n={1} title={'Нажми «Добавить расход»'} desc="Кнопка сверху справа." />
         <Step n={2} title="Заполни поля" desc="Дата, категория, описание, сумма. Компания не обязательна." />
-        <Step n={3} title="Сохрани" desc="Расход появится в таблице и в сводке «Деньги»." />
+        <Step n={3} title="Сохрани" desc="Расход появится в таблице Финансы и на Дашборде." />
 
         <h4 className="font-semibold text-sm text-slate-700 mt-5">Поля формы</h4>
         <FieldTable
@@ -719,7 +719,7 @@ const Help: React.FC = () => {
       </Section>
 
       {/* ========== 7. MONEY ========== */}
-      <Section id="money" icon={<Banknote size={20} />} title="7. Деньги (финансовая сводка)">
+      <Section id="dashboard" icon={<Banknote size={20} />} title="7. Дашборд">
         <p className="text-sm text-slate-600 mt-3">Сколько потратили, сколько заработали, прибыль, у кого сколько металла. Три вкладки: <strong>Сводка</strong>, <strong>Приход</strong>, <strong>Расход</strong>.</p>
 
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4 text-center">
@@ -741,7 +741,7 @@ const Help: React.FC = () => {
           </div>
           <div className="bg-slate-50 rounded-lg p-3 text-center">
             <p className="text-xs font-semibold text-red-700">Расходы</p>
-            <p className="text-xs text-slate-500">Из раздела «Расходы»</p>
+            <p className="text-xs text-slate-500">Из раздела «Финансы»</p>
           </div>
           <div className="bg-slate-50 rounded-lg p-3 text-center">
             <p className="text-xs font-semibold text-slate-700">Прибыль</p>
@@ -753,7 +753,7 @@ const Help: React.FC = () => {
         <p className="text-sm text-slate-600 mt-1">Детальный журнал денежных поступлений — все продажи металла. Колонки: дата, сумма, нал/безнал, плательщик (покупатель), получатель (НИКАМЕТ), примечание.</p>
 
         <h4 className="font-semibold text-sm text-slate-700 mt-4">Вкладка «Расход»</h4>
-        <p className="text-sm text-slate-600 mt-1">Детальный журнал денежных выплат — закупки металла + все расходы. Колонки: дата, сумма, нал/безнал, плательщик (НИКАМЕТ), получатель, примечание, статус оплаты.</p>
+        <p className="text-sm text-slate-600 mt-1">Детальный журнал денежных выплат — закупки металла + все расходы. Колонки: дата, сумма, нал/безнал, контрагент, примечание, статус оплаты.</p>
 
         <h4 className="font-semibold text-sm text-slate-700 mt-4">Таблица «По компаниям» (в Сводке)</h4>
         <FieldTable
@@ -778,7 +778,7 @@ const Help: React.FC = () => {
         <Step n={3} title="Сумма сама" desc="Количество x цена из тарифа = итого. Сохрани." />
 
         <Callout type="info">
-          <strong>Работы vs Расходы.</strong> «Работы» — услуги с ценой за единицу из тарифов (резка 1500 руб/тн). «Расходы» — произвольные затраты (транспорт 15 000 руб, аренда 50 000 руб).
+          <strong>Работы vs Финансы.</strong> «Работы» — услуги с ценой за единицу из тарифов (резка 1500 руб/тн). «Финансы» — произвольные затраты (транспорт 15 000 руб, аренда 50 000 руб).
         </Callout>
       </Section>
 
@@ -838,14 +838,14 @@ const Help: React.FC = () => {
         <p className="text-sm text-slate-600 mt-3">Полный аудит. Кто, когда, что сделал. Оператор этот раздел не видит.</p>
 
         <h4 className="font-semibold text-sm text-slate-700 mt-4">Что записывается</h4>
-        <p className="text-sm text-slate-600 mt-1">Каждое создание, изменение и удаление: движения, расходы, работы, позиции, компании, материалы, тарифы.</p>
+        <p className="text-sm text-slate-600 mt-1">Каждое создание, изменение и удаление: движения, финансы, работы, позиции, компании, материалы, тарифы.</p>
 
         <h4 className="font-semibold text-sm text-slate-700 mt-4">Колонки</h4>
         <FieldTable
           fields={[
             { name: 'Дата и время', desc: 'Когда произошло.' },
             { name: 'Пользователь', desc: 'Кто сделал (email).' },
-            { name: 'Таблица', desc: 'Движения, Расходы, Работы, Компании и т.д.' },
+            { name: 'Таблица', desc: 'Движения, Финансы, Работы, Компании и т.д.' },
             { name: 'Действие', desc: 'Создание / Изменение / Удаление.' },
             { name: 'Было', desc: 'Старые данные (при изменении/удалении).' },
             { name: 'Стало', desc: 'Новые данные (при создании/изменении).' },
@@ -914,7 +914,7 @@ DELETE FROM public.companies;`}</CodeBlock>
           <FieldTable
             fields={[
               { name: 'Движения + остатки', desc: 'DELETE FROM public.movements; DELETE FROM public.positions;' },
-              { name: 'Расходы', desc: 'DELETE FROM public.expenses;' },
+              { name: 'Финансы', desc: 'DELETE FROM public.expenses;' },
               { name: 'Работы', desc: 'DELETE FROM public.work_logs;' },
               { name: 'История', desc: 'DELETE FROM public.audit_log;' },
             ]}
@@ -935,15 +935,15 @@ DELETE FROM public.companies;`}</CodeBlock>
           },
           {
             q: 'Как увидеть, сколько металла у Энергоинвеста?',
-            a: 'Раздел «Деньги» — таблица «По компаниям», строка Энергоинвест. Или «Остатки» — режим «Разбить по компаниям».',
+            a: 'Раздел «Дашборд» — статистика, строка Энергоинвест. Или «Остатки» — режим «Разбить по компаниям».',
           },
           {
             q: 'Как посмотреть прибыль?',
-            a: 'Раздел «Деньги» — карточка «Прибыль». Или «Главная» — там тоже есть. Формула: Продажи - Закупки - Расходы.',
+            a: 'Раздел «Дашборд» — карточка «Прибыль». Или «Главная» — там тоже есть. Формула: Продажи - Закупки - Расходы.',
           },
           {
             q: 'В чём разница между «Работами» и «Расходами»?',
-            a: '«Работы» — услуги по тарифу (резка 1500 руб/тн). «Расходы» — произвольные затраты (транспорт 15 000, аренда 50 000).',
+            a: '«Работы» — услуги по тарифу (резка 1500 руб/тн). «Финансы» — произвольные затраты (логистика 15 000, аренда 50 000).',
           },
           {
             q: 'Могу ли я отредактировать движение?',
@@ -951,7 +951,7 @@ DELETE FROM public.companies;`}</CodeBlock>
           },
           {
             q: 'Компания не удаляется. Почему?',
-            a: 'К ней привязаны записи. Удали связанные движения/работы/расходы или сделай компанию неактивной.',
+            a: 'К ней привязаны записи. Удали связанные движения/работы/финансы или сделай компанию неактивной.',
           },
           {
             q: 'Баланс ушёл в минус. Нормально?',
@@ -959,7 +959,7 @@ DELETE FROM public.companies;`}</CodeBlock>
           },
           {
             q: 'Как на телефоне?',
-            a: 'Та же ссылка. Внизу — навигация (Главная, Движение, Остатки, Деньги, Ещё). Таблицы превращаются в карточки.',
+            a: 'Та же ссылка. Внизу — навигация (Главная, Движение, Остатки, Финансы, Ещё). Таблицы превращаются в карточки.',
           },
           {
             q: 'Экспорт в Excel?',

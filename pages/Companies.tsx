@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Company, CompanyType } from '../types';
 import { getCompanies, createCompany, updateCompany, deleteCompany } from '../services/supabase';
+import { useConfirm } from '../hooks/useConfirm';
 import { useAuth } from '../context/AuthContext';
 import { Plus, Trash2, Edit2, Save, X, Building2, Loader2 } from 'lucide-react';
 
@@ -12,6 +13,7 @@ const COMPANY_TYPES: { value: CompanyType; label: string }[] = [
 
 const Companies: React.FC = () => {
   const { isAdmin } = useAuth();
+  const { confirm, confirmDialog } = useConfirm();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +44,7 @@ const Companies: React.FC = () => {
   }, [showInactive]);
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Удалить компанию? Это может повлиять на связанные записи.')) return;
+    if (!await confirm('Удалить компанию?', 'Это может повлиять на связанные записи.', 'danger')) return;
     try {
       await deleteCompany(id);
       setCompanies((prev) => prev.filter((c) => c.id !== id));
@@ -363,6 +365,7 @@ const Companies: React.FC = () => {
           </table>
         </div>
       </div>
+      {confirmDialog}
     </div>
   );
 };

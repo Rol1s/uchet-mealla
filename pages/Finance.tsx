@@ -1,29 +1,17 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Expense, ExpenseInput, ExpenseCategory, Company, FinanceOperationType, PaymentMethodType, Movement } from '../types';
 import { getExpenses, createExpense, updateExpense, deleteExpense, getCompanies, createCompany, getMovements } from '../services/supabase';
 import { useAuth } from '../context/AuthContext';
-import { Plus, Trash2, Loader2, Wallet, Search, Filter, Edit2, ChevronDown, ArrowDownCircle, ArrowUpCircle, Link, FileSpreadsheet } from 'lucide-react';
+import { Plus, Trash2, Loader2, Wallet, Search, Filter, Edit2, ArrowDownCircle, ArrowUpCircle, Link, FileSpreadsheet } from 'lucide-react';
 import DateFilter, { DateRange } from '../components/DateFilter';
 import { exportToXlsx, formatDate, formatCurrency } from '../utils/export';
-
-const CATEGORY_LABELS: Record<ExpenseCategory, string> = {
-  transport: 'Логистика',
-  loading: 'Погрузка/Разгрузка',
-  processing: 'Обработка',
-  rent_salary: 'Аренда/Зарплата',
-  other: 'Прочее',
-};
-
-const CATEGORY_COLORS: Record<ExpenseCategory, string> = {
-  transport: 'badge-blue',
-  loading: 'badge-orange',
-  processing: 'badge-green',
-  rent_salary: 'badge-red',
-  other: 'badge-gray',
-};
+import { CATEGORY_LABELS, CATEGORY_COLORS } from '../constants/finance';
+import { useConfirm } from '../hooks/useConfirm';
+import Combobox from '../components/Combobox';
 
 const Finance: React.FC = () => {
   const { isAdmin, user } = useAuth();
+  const { confirm, confirmDialog } = useConfirm();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [movements, setMovements] = useState<Movement[]>([]);
@@ -41,11 +29,7 @@ const Finance: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [dateRange, setDateRange] = useState<DateRange>({ dateFrom: null, dateTo: null });
 
-  // Combobox state for counterparty
   const [counterpartyInput, setCounterpartyInput] = useState('');
-  const [showCounterpartyDropdown, setShowCounterpartyDropdown] = useState(false);
-  const counterpartyInputRef = useRef<HTMLInputElement>(null);
-  const counterpartyDropdownRef = useRef<HTMLDivElement>(null);
 
   const getEmptyForm = useCallback((): ExpenseInput => ({
     expense_date: new Date().toISOString().split('T')[0],
@@ -92,21 +76,6 @@ const Finance: React.FC = () => {
     return () => { isMounted = false; };
   }, []);
 
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        counterpartyDropdownRef.current && 
-        !counterpartyDropdownRef.current.contains(e.target as Node) &&
-        counterpartyInputRef.current &&
-        !counterpartyInputRef.current.contains(e.target as Node)
-      ) {
-        setShowCounterpartyDropdown(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
   const closeModal = useCallback(() => {
     setIsModalOpen(false);
     setEditingId(null);
@@ -115,10 +84,10 @@ const Finance: React.FC = () => {
     setCounterpartyInput('');
   }, [getEmptyForm]);
 
-  const requestCloseModal = useCallback(() => {
-    if (formDirty && !window.confirm('Закрыть без сохранения? Несохранённые данные будут потеряны.')) return;
+  const requestCloseModal = useCallback(async () => {
+    if (formDirty && !await confirm('Закрыть?', 'Несохранённые данные будут потеряны.', 'warning')) return;
     closeModal();
-  }, [formDirty, closeModal]);
+  }, [formDirty, closeModal, confirm]);
 
   const openCreate = useCallback(() => {
     setEditingId(null);
@@ -149,29 +118,17 @@ const Finance: React.FC = () => {
     setIsModalOpen(true);
   }, []);
 
-  const filteredCounterpartyCompanies = companies.filter(c => 
-    c.name.toLowerCase().includes(counterpartyInput.toLowerCase())
-  );
-
-  const selectCounterparty = (company: Company | null) => {
-    if (company) {
-      setFormState(prev => ({ ...prev, company_id: company.id }));
-      setCounterpartyInput(company.name);
-    } else {
-      setFormState(prev => ({ ...prev, company_id: null }));
-      setCounterpartyInput('');
-    }
-    setShowCounterpartyDropdown(false);
+  const handleSelectCounterparty = (item: { id: string; name: string } | null) => {
+    setFormState(prev => ({ ...prev, company_id: item?.id || null }));
+    setCounterpartyInput(item?.name || '');
     setFormDirty(true);
   };
 
-  const handleCreateCounterparty = async () => {
-    if (!counterpartyInput.trim()) return;
+  const handleCreateCounterparty = async (name: string) => {
     try {
-      const newCompany = await createCompany({ name: counterpartyInput.trim(), type: 'both', active: true });
+      const newCompany = await createCompany({ name, type: 'both', active: true });
       setCompanies(prev => [...prev, newCompany]);
       setFormState(prev => ({ ...prev, company_id: newCompany.id }));
-      setShowCounterpartyDropdown(false);
       setFormDirty(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка создания компании');
@@ -193,7 +150,6 @@ const Finance: React.FC = () => {
       }
       closeModal();
     } catch (err) {
-      console.error('Finance handleSubmit error:', err);
       setError(err instanceof Error ? err.message : 'Ошибка сохранения');
     } finally {
       setSubmitting(false);
@@ -205,7 +161,7 @@ const Finance: React.FC = () => {
       alert('Вы можете удалять только свои записи');
       return;
     }
-    if (!window.confirm('Удалить эту запись?')) return;
+    if (!await confirm('Удалить?', 'Удалить эту запись? Это действие нельзя отменить.', 'danger')) return;
     try {
       await deleteExpense(id);
       setExpenses((prev) => prev.filter((e) => e.id !== id));
@@ -643,62 +599,20 @@ const Finance: React.FC = () => {
                 </div>
               </div>
 
-              {/* Counterparty (combobox) */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  {formState.operation_type === 'income' ? 'От кого (контрагент)' : 'Кому (контрагент)'}
-                </label>
-                <div className="relative">
-                  <input
-                    ref={counterpartyInputRef}
-                    type="text"
-                    placeholder={formState.operation_type === 'income' ? 'Кто платит...' : 'Кому платим...'}
-                    className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border pr-8"
-                    value={counterpartyInput}
-                    onChange={(e) => {
-                      setCounterpartyInput(e.target.value);
-                      setShowCounterpartyDropdown(true);
-                      if (!e.target.value) setFormState(prev => ({ ...prev, company_id: null }));
-                      setFormDirty(true);
-                    }}
-                    onFocus={() => setShowCounterpartyDropdown(true)}
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                    onClick={() => setShowCounterpartyDropdown(!showCounterpartyDropdown)}
-                  >
-                    <ChevronDown size={18} />
-                  </button>
-                  {showCounterpartyDropdown && (
-                    <div ref={counterpartyDropdownRef} className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                      <button type="button" className="w-full text-left px-3 py-2 hover:bg-slate-50 text-slate-500" onClick={() => selectCounterparty(null)}>
-                        Не указан
-                      </button>
-                      {filteredCounterpartyCompanies.map((c) => (
-                        <button
-                          type="button"
-                          key={c.id}
-                          className={`w-full text-left px-3 py-2 hover:bg-slate-50 ${formState.company_id === c.id ? 'bg-blue-50 text-blue-700' : ''}`}
-                          onClick={() => selectCounterparty(c)}
-                        >
-                          {c.name}
-                        </button>
-                      ))}
-                      {counterpartyInput.trim() && !companies.some(c => c.name.toLowerCase() === counterpartyInput.toLowerCase()) && (
-                        <button
-                          type="button"
-                          className="w-full text-left px-3 py-2 hover:bg-green-50 text-green-700 border-t border-slate-100 flex items-center gap-2"
-                          onClick={handleCreateCounterparty}
-                        >
-                          <Plus size={16} />
-                          Создать «{counterpartyInput.trim()}»
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
+              <Combobox
+                label={formState.operation_type === 'income' ? 'От кого (контрагент)' : 'Кому (контрагент)'}
+                placeholder={formState.operation_type === 'income' ? 'Кто платит...' : 'Кому платим...'}
+                inputValue={counterpartyInput}
+                items={companies}
+                selectedId={formState.company_id}
+                onSelect={handleSelectCounterparty}
+                onInputChange={(v) => {
+                  setCounterpartyInput(v);
+                  if (!v) setFormState(prev => ({ ...prev, company_id: null }));
+                  setFormDirty(true);
+                }}
+                onCreate={handleCreateCounterparty}
+              />
 
               {/* Link to Movement */}
               <div>
@@ -767,6 +681,7 @@ const Finance: React.FC = () => {
           </div>
         </div>
       )}
+      {confirmDialog}
     </div>
   );
 };

@@ -401,6 +401,33 @@ export async function createWorkLog(input: WorkLogInput, pricePerUnit: number): 
   return data;
 }
 
+export async function updateWorkLog(id: string, input: WorkLogInput, pricePerUnit: number): Promise<WorkLog> {
+  const totalPrice = input.quantity * pricePerUnit;
+
+  const { data, error } = await supabase
+    .from('work_logs')
+    .update({
+      company_id: input.company_id,
+      material_id: input.material_id || null,
+      service_id: input.service_id,
+      quantity: input.quantity,
+      total_price: totalPrice,
+      note: input.note || null,
+      work_date: input.work_date,
+    })
+    .eq('id', id)
+    .select(`
+      *,
+      company:companies(*),
+      material:materials(*),
+      service:service_rates(*)
+    `)
+    .single();
+
+  if (error) throw normalizeDbError(error);
+  return data;
+}
+
 export async function deleteWorkLog(id: string): Promise<void> {
   const { error } = await supabase.from('work_logs').delete().eq('id', id);
   if (error) throw normalizeDbError(error);
@@ -419,10 +446,7 @@ export async function getExpenses(): Promise<Expense[]> {
       user:users(name, email)
     `)
     .order('expense_date', { ascending: false });
-  if (error) {
-    console.error('getExpenses error:', error);
-    throw normalizeDbError(error);
-  }
+  if (error) throw normalizeDbError(error);
   return data || [];
 }
 
@@ -452,10 +476,7 @@ export async function createExpense(input: ExpenseInput): Promise<Expense> {
       recipient:companies!recipient_id(*)
     `)
     .single();
-  if (error) {
-    console.error('createExpense RAW error:', JSON.stringify(error));
-    throw normalizeDbError(error);
-  }
+  if (error) throw normalizeDbError(error);
   return data;
 }
 
