@@ -414,7 +414,7 @@ const Help: React.FC = () => {
   const [tab, setTab] = useState<'onboarding' | 'kb'>('onboarding');
 
   const sections = [
-    { id: 'updates', title: 'Что нового (март 2026)' },
+    { id: 'updates', title: 'История обновлений' },
     { id: 'login', title: '1. Вход в систему' },
     { id: 'roles', title: '2. Роли: оператор и админ' },
     { id: 'dashboard', title: '3. Главная' },
@@ -514,15 +514,38 @@ const Help: React.FC = () => {
         </div>
       </div>
 
-      {/* ========== WHAT'S NEW ========== */}
-      <Section id="updates" icon={<Megaphone size={20} />} title="Что нового (март 2026)" defaultOpen>
+      {/* ========== CHANGELOG ========== */}
+      <Section id="updates" icon={<Megaphone size={20} />} title="История обновлений" defaultOpen>
         <div className="text-sm text-slate-600 space-y-5 mt-3">
 
-          {/* Update 3 */}
+          {/* 15 марта 2026 - вечер */}
+          <div className="border border-purple-200 rounded-xl overflow-hidden">
+            <div className="bg-purple-600 px-4 py-2.5 flex items-center justify-between">
+              <h4 className="font-bold text-white text-sm">v2.4 — Упрощение интерфейса</h4>
+              <span className="text-purple-200 text-xs">15 марта 2026, вечер</span>
+            </div>
+            <div className="p-4 space-y-3">
+              <div>
+                <p className="font-semibold text-slate-800 mb-1">Движение металла</p>
+                <ul className="list-disc list-inside space-y-0.5 text-slate-600">
+                  <li><strong>Убрана колонка «Владение»</strong> — лишняя информация, и так понятно чей металл.</li>
+                </ul>
+              </div>
+              <div>
+                <p className="font-semibold text-slate-800 mb-1">Остатки на складе</p>
+                <ul className="list-disc list-inside space-y-0.5 text-slate-600">
+                  <li><strong>«Владение» заменено на «Компания»</strong> — теперь показывается название компании (Энергоинвест) вместо «Клиента».</li>
+                  <li>Группировка в сводном режиме теперь по: материал + размер + компания.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* 15 марта 2026 - день */}
           <div className="border border-green-200 rounded-xl overflow-hidden">
             <div className="bg-green-600 px-4 py-2.5 flex items-center justify-between">
-              <h4 className="font-bold text-white text-sm">Обновление 3 — Поставщик, Покупатель, Куда</h4>
-              <span className="text-green-200 text-xs">15 марта 2026</span>
+              <h4 className="font-bold text-white text-sm">v2.3 — Поставщик, Покупатель, Куда</h4>
+              <span className="text-green-200 text-xs">15 марта 2026, день</span>
             </div>
             <div className="p-4 space-y-3">
               <div>
@@ -548,11 +571,11 @@ const Help: React.FC = () => {
             </div>
           </div>
 
-          {/* Update 2 */}
+          {/* 10 марта 2026 */}
           <div className="border border-blue-200 rounded-xl overflow-hidden">
             <div className="bg-blue-600 px-4 py-2.5 flex items-center justify-between">
-              <h4 className="font-bold text-white text-sm">Обновление 2 — Деньги: журнал платежей</h4>
-              <span className="text-blue-200 text-xs">март 2026</span>
+              <h4 className="font-bold text-white text-sm">v2.2 — Деньги: журнал платежей</h4>
+              <span className="text-blue-200 text-xs">10 марта 2026</span>
             </div>
             <div className="p-4 space-y-3">
               <div>
@@ -570,11 +593,11 @@ const Help: React.FC = () => {
             </div>
           </div>
 
-          {/* Update 1 */}
+          {/* 5 марта 2026 */}
           <div className="border border-slate-200 rounded-xl overflow-hidden">
             <div className="bg-slate-700 px-4 py-2.5 flex items-center justify-between">
-              <h4 className="font-bold text-white text-sm">Обновление 1 — Оплата, редактирование, быстрота</h4>
-              <span className="text-slate-400 text-xs">март 2026</span>
+              <h4 className="font-bold text-white text-sm">v2.1 — Оплата, редактирование, быстрота</h4>
+              <span className="text-slate-400 text-xs">5 марта 2026</span>
             </div>
             <div className="p-4 space-y-3">
               <div>
@@ -596,6 +619,28 @@ const Help: React.FC = () => {
                 <ul className="list-disc list-inside space-y-0.5 text-slate-600">
                   <li><strong>Защита данных</strong> — при закрытии формы без сохранения появляется подтверждение.</li>
                   <li><strong>Быстрее загрузка</strong> — интерфейс открывается мгновенно, данные догружаются в фоне.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* 1 марта 2026 */}
+          <div className="border border-slate-200 rounded-xl overflow-hidden">
+            <div className="bg-slate-500 px-4 py-2.5 flex items-center justify-between">
+              <h4 className="font-bold text-white text-sm">v2.0 — Запуск MetalTrack Pro</h4>
+              <span className="text-slate-300 text-xs">1 марта 2026</span>
+            </div>
+            <div className="p-4 space-y-3">
+              <div>
+                <p className="font-semibold text-slate-800 mb-1">Первый релиз системы</p>
+                <ul className="list-disc list-inside space-y-0.5 text-slate-600">
+                  <li>Учёт движения металла (приход/расход)</li>
+                  <li>Автоматический расчёт остатков</li>
+                  <li>Справочники: компании, материалы, тарифы</li>
+                  <li>Расходы и работы</li>
+                  <li>Финансовая сводка</li>
+                  <li>История изменений (аудит)</li>
+                  <li>Роли: админ и оператор</li>
                 </ul>
               </div>
             </div>
