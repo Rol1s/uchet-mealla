@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Movement, Company, Material, MovementInput, OwnershipType, OperationType, PaymentMethodType } from '../types';
-import { getMovements, createMovement, updateMovement, deleteMovement, getCompanies, getMaterials } from '../services/supabase';
+import { getMovements, createMovement, updateMovement, deleteMovement, getCompanies, getMaterials, createCompany } from '../services/supabase';
 import { useAuth } from '../context/AuthContext';
-import { Plus, Trash2, Search, Filter, Loader2, Edit2 } from 'lucide-react';
+import { Plus, Trash2, Search, Filter, Loader2, Edit2, ChevronDown } from 'lucide-react';
 
 const LOADING_COST_PER_TON = 1000;
 
@@ -40,6 +40,16 @@ const Movements: React.FC = () => {
   const [formDirty, setFormDirty] = useState(false);
   const [hasLoadingCost, setHasLoadingCost] = useState(false);
 
+  // Combobox state for supplier/buyer
+  const [supplierInput, setSupplierInput] = useState('');
+  const [buyerInput, setBuyerInput] = useState('');
+  const [showSupplierDropdown, setShowSupplierDropdown] = useState(false);
+  const [showBuyerDropdown, setShowBuyerDropdown] = useState(false);
+  const supplierInputRef = useRef<HTMLInputElement>(null);
+  const supplierDropdownRef = useRef<HTMLDivElement>(null);
+  const buyerInputRef = useRef<HTMLInputElement>(null);
+  const buyerDropdownRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     let isMounted = true;
     const loadData = async () => {
@@ -68,12 +78,38 @@ const Movements: React.FC = () => {
     return () => { isMounted = false; };
   }, []);
 
+  // Close dropdowns on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        supplierDropdownRef.current && 
+        !supplierDropdownRef.current.contains(e.target as Node) &&
+        supplierInputRef.current &&
+        !supplierInputRef.current.contains(e.target as Node)
+      ) {
+        setShowSupplierDropdown(false);
+      }
+      if (
+        buyerDropdownRef.current && 
+        !buyerDropdownRef.current.contains(e.target as Node) &&
+        buyerInputRef.current &&
+        !buyerInputRef.current.contains(e.target as Node)
+      ) {
+        setShowBuyerDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const closeModal = useCallback(() => {
     setIsModalOpen(false);
     setEditingId(null);
     setFormState(getEmptyForm());
     setFormDirty(false);
     setHasLoadingCost(false);
+    setSupplierInput('');
+    setBuyerInput('');
   }, [getEmptyForm]);
 
   const requestCloseModal = useCallback(() => {
@@ -86,6 +122,8 @@ const Movements: React.FC = () => {
     setFormState(getEmptyForm());
     setFormDirty(false);
     setHasLoadingCost(false);
+    setSupplierInput('');
+    setBuyerInput('');
     setIsModalOpen(true);
   }, [getEmptyForm]);
 
@@ -108,6 +146,8 @@ const Movements: React.FC = () => {
       destination: m.destination ?? '',
       note: m.note ?? '',
     });
+    setSupplierInput(m.supplier?.name || '');
+    setBuyerInput(m.buyer?.name || '');
     setFormDirty(false);
     setHasLoadingCost((m.cost ?? 0) > 0);
     setIsModalOpen(true);
@@ -225,6 +265,63 @@ const Movements: React.FC = () => {
 
   const suppliers = companies.filter(c => c.type === 'supplier' || c.type === 'both');
   const buyers = companies.filter(c => c.type === 'buyer' || c.type === 'both');
+
+  const filteredSuppliers = suppliers.filter(c => 
+    c.name.toLowerCase().includes(supplierInput.toLowerCase())
+  );
+  const filteredBuyers = buyers.filter(c => 
+    c.name.toLowerCase().includes(buyerInput.toLowerCase())
+  );
+
+  const selectSupplier = (company: Company | null) => {
+    if (company) {
+      setFormState(prev => ({ ...prev, supplier_id: company.id }));
+      setSupplierInput(company.name);
+    } else {
+      setFormState(prev => ({ ...prev, supplier_id: '' }));
+      setSupplierInput('');
+    }
+    setShowSupplierDropdown(false);
+    setFormDirty(true);
+  };
+
+  const selectBuyer = (company: Company | null) => {
+    if (company) {
+      setFormState(prev => ({ ...prev, buyer_id: company.id }));
+      setBuyerInput(company.name);
+    } else {
+      setFormState(prev => ({ ...prev, buyer_id: '' }));
+      setBuyerInput('');
+    }
+    setShowBuyerDropdown(false);
+    setFormDirty(true);
+  };
+
+  const handleCreateSupplier = async () => {
+    if (!supplierInput.trim()) return;
+    try {
+      const newCompany = await createCompany({ name: supplierInput.trim(), type: 'supplier' });
+      setCompanies(prev => [...prev, newCompany]);
+      setFormState(prev => ({ ...prev, supplier_id: newCompany.id }));
+      setShowSupplierDropdown(false);
+      setFormDirty(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Ошибка создания компании');
+    }
+  };
+
+  const handleCreateBuyer = async () => {
+    if (!buyerInput.trim()) return;
+    try {
+      const newCompany = await createCompany({ name: buyerInput.trim(), type: 'buyer' });
+      setCompanies(prev => [...prev, newCompany]);
+      setFormState(prev => ({ ...prev, buyer_id: newCompany.id }));
+      setShowBuyerDropdown(false);
+      setFormDirty(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Ошибка создания компании');
+    }
+  };
 
   const filteredMovements = movements.filter((m) => {
     const companyName = m.position?.company?.name || '';
@@ -593,18 +690,65 @@ const Movements: React.FC = () => {
               {formState.operation === 'income' && (
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Поставщик</label>
-                  <select
-                    className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
-                    value={formState.supplier_id}
-                    onChange={(e) => updateFormField('supplier_id', e.target.value)}
-                  >
-                    <option value="">Выберите поставщика...</option>
-                    {suppliers.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <input
+                      ref={supplierInputRef}
+                      type="text"
+                      placeholder="Выберите или введите..."
+                      className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border pr-8"
+                      value={supplierInput}
+                      onChange={(e) => {
+                        setSupplierInput(e.target.value);
+                        setShowSupplierDropdown(true);
+                        if (!e.target.value) {
+                          setFormState(prev => ({ ...prev, supplier_id: '' }));
+                        }
+                        setFormDirty(true);
+                      }}
+                      onFocus={() => setShowSupplierDropdown(true)}
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      onClick={() => setShowSupplierDropdown(!showSupplierDropdown)}
+                    >
+                      <ChevronDown size={18} />
+                    </button>
+                    {showSupplierDropdown && (
+                      <div 
+                        ref={supplierDropdownRef}
+                        className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto"
+                      >
+                        <button
+                          type="button"
+                          className="w-full text-left px-3 py-2 hover:bg-slate-50 text-slate-500"
+                          onClick={() => selectSupplier(null)}
+                        >
+                          Не указан
+                        </button>
+                        {filteredSuppliers.map((c) => (
+                          <button
+                            type="button"
+                            key={c.id}
+                            className={`w-full text-left px-3 py-2 hover:bg-slate-50 ${formState.supplier_id === c.id ? 'bg-blue-50 text-blue-700' : ''}`}
+                            onClick={() => selectSupplier(c)}
+                          >
+                            {c.name}
+                          </button>
+                        ))}
+                        {supplierInput.trim() && !companies.some(c => c.name.toLowerCase() === supplierInput.toLowerCase()) && (
+                          <button
+                            type="button"
+                            className="w-full text-left px-3 py-2 hover:bg-green-50 text-green-700 border-t border-slate-100 flex items-center gap-2"
+                            onClick={handleCreateSupplier}
+                          >
+                            <Plus size={16} />
+                            Создать «{supplierInput.trim()}»
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -612,18 +756,65 @@ const Movements: React.FC = () => {
               {formState.operation === 'expense' && (
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Покупатель</label>
-                  <select
-                    className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
-                    value={formState.buyer_id}
-                    onChange={(e) => updateFormField('buyer_id', e.target.value)}
-                  >
-                    <option value="">Выберите покупателя...</option>
-                    {buyers.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <input
+                      ref={buyerInputRef}
+                      type="text"
+                      placeholder="Выберите или введите..."
+                      className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border pr-8"
+                      value={buyerInput}
+                      onChange={(e) => {
+                        setBuyerInput(e.target.value);
+                        setShowBuyerDropdown(true);
+                        if (!e.target.value) {
+                          setFormState(prev => ({ ...prev, buyer_id: '' }));
+                        }
+                        setFormDirty(true);
+                      }}
+                      onFocus={() => setShowBuyerDropdown(true)}
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      onClick={() => setShowBuyerDropdown(!showBuyerDropdown)}
+                    >
+                      <ChevronDown size={18} />
+                    </button>
+                    {showBuyerDropdown && (
+                      <div 
+                        ref={buyerDropdownRef}
+                        className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto"
+                      >
+                        <button
+                          type="button"
+                          className="w-full text-left px-3 py-2 hover:bg-slate-50 text-slate-500"
+                          onClick={() => selectBuyer(null)}
+                        >
+                          Не указан
+                        </button>
+                        {filteredBuyers.map((c) => (
+                          <button
+                            type="button"
+                            key={c.id}
+                            className={`w-full text-left px-3 py-2 hover:bg-slate-50 ${formState.buyer_id === c.id ? 'bg-blue-50 text-blue-700' : ''}`}
+                            onClick={() => selectBuyer(c)}
+                          >
+                            {c.name}
+                          </button>
+                        ))}
+                        {buyerInput.trim() && !companies.some(c => c.name.toLowerCase() === buyerInput.toLowerCase()) && (
+                          <button
+                            type="button"
+                            className="w-full text-left px-3 py-2 hover:bg-green-50 text-green-700 border-t border-slate-100 flex items-center gap-2"
+                            onClick={handleCreateBuyer}
+                          >
+                            <Plus size={16} />
+                            Создать «{buyerInput.trim()}»
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
