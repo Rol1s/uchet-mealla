@@ -6,6 +6,9 @@ const ROLE_CACHE_KEY = 'metaltrack_role';
 const PROFILE_FETCH_TIMEOUT_MS = 8000;
 const PROFILE_FETCH_RETRIES = 3;
 
+/** Один запрос профиля на userId — повторные вызовы ждут тот же результат */
+const profileFetchCache = new Map<string, Promise<{ data: User | null; error: unknown }>>();
+
 function getCachedRole(userId: string): 'admin' | 'operator' {
   try {
     const raw = localStorage.getItem(`${ROLE_CACHE_KEY}_${userId}`);
@@ -33,19 +36,30 @@ function clearCachedRole(userId: string): void {
 }
 
 async function fetchProfileWithRetry(userId: string): Promise<{ data: User | null; error: unknown }> {
-  for (let attempt = 0; attempt < PROFILE_FETCH_RETRIES; attempt++) {
-    const profilePromise = supabase.from('users').select('*').eq('id', userId).single();
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('timeout')), PROFILE_FETCH_TIMEOUT_MS)
-    );
-    try {
-      const result = (await Promise.race([profilePromise, timeoutPromise])) as { data: User | null; error: unknown };
-      if (result.data && !result.error) return result;
-    } catch {
-      // retry
+  let pending = profileFetchCache.get(userId);
+  if (pending) return pending;
+
+  const run = async (): Promise<{ data: User | null; error: unknown }> => {
+    for (let attempt = 0; attempt < PROFILE_FETCH_RETRIES; attempt++) {
+      const profilePromise = supabase.from('users').select('*').eq('id', userId).single();
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('timeout')), PROFILE_FETCH_TIMEOUT_MS)
+      );
+      try {
+        const result = (await Promise.race([profilePromise, timeoutPromise])) as { data: User | null; error: unknown };
+        if (result.data && !result.error) return result;
+      } catch {
+        // retry
+      }
     }
-  }
-  return { data: null, error: new Error('Profile fetch failed after retries') };
+    return { data: null, error: new Error('Profile fetch failed after retries') };
+  };
+
+  pending = run().finally(() => {
+    profileFetchCache.delete(userId);
+  });
+  profileFetchCache.set(userId, pending);
+  return pending;
 }
 
 interface AuthContextType {

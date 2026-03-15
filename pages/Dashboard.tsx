@@ -11,12 +11,14 @@ const Dashboard: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
     const loadData = async () => {
       try {
         setLoading(true);
+        setError(null);
         const [movementsData, workLogsData, positionsData, expensesData] = await Promise.all([
           getMovements(),
           getWorkLogs(),
@@ -28,11 +30,14 @@ const Dashboard: React.FC = () => {
           setWorkLogs(workLogsData);
           setPositions(positionsData);
           setExpenses(expensesData);
-          setError(null);
         }
       } catch (err) {
         if (isMounted) {
-          setError(err instanceof Error ? err.message : 'Ошибка загрузки данных');
+          const msg = err instanceof Error ? err.message : 'Ошибка загрузки данных';
+          const isNetwork = /timeout|network|failed to fetch|ERR_/i.test(msg);
+          setError(isNetwork
+            ? 'Не удалось загрузить данные. Проверьте подключение к интернету.'
+            : msg);
         }
       } finally {
         if (isMounted) setLoading(false);
@@ -40,7 +45,7 @@ const Dashboard: React.FC = () => {
     };
     loadData();
     return () => { isMounted = false; };
-  }, []);
+  }, [retryCount]);
 
   const stats = useMemo(() => {
     const totalIncome = movements
@@ -96,8 +101,17 @@ const Dashboard: React.FC = () => {
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-        {error}
+      <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 max-w-md">
+        <p className="text-amber-800 font-medium mb-2">Не удалось загрузить данные</p>
+        <p className="text-amber-700 text-sm mb-4">{error}</p>
+        <p className="text-slate-600 text-sm mb-4">Если интернет нестабильный — подождите и нажмите «Повторить» или обновите страницу (F5).</p>
+        <button
+          type="button"
+          onClick={() => setRetryCount((c) => c + 1)}
+          className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 font-medium"
+        >
+          Повторить
+        </button>
       </div>
     );
   }
