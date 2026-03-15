@@ -22,7 +22,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 
 const UPDATE_BANNER_KEY = 'metaltrack_update_dismissed';
-const UPDATE_BANNER_VERSION = '2026-03e';
+const UPDATE_BANNER_VERSION = '2026-03f';
 
 interface LayoutProps {
   children: React.ReactNode;

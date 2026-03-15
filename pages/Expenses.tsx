@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Expense, ExpenseInput, ExpenseCategory, Company } from '../types';
-import { getExpenses, createExpense, updateExpense, deleteExpense, getCompanies } from '../services/supabase';
+import { getExpenses, createExpense, updateExpense, deleteExpense, getCompanies, createCompany } from '../services/supabase';
 import { useAuth } from '../context/AuthContext';
-import { Plus, Trash2, Loader2, Receipt, Search, Filter, Edit2 } from 'lucide-react';
+import { Plus, Trash2, Loader2, Receipt, Search, Filter, Edit2, ChevronDown } from 'lucide-react';
 
 const CATEGORY_LABELS: Record<ExpenseCategory, string> = {
-  transport: 'Транспорт',
+  transport: 'Логистика',
   loading: 'Погрузка/Разгрузка',
   processing: 'Обработка',
   rent_salary: 'Аренда/Зарплата',
@@ -32,6 +32,10 @@ const Expenses: React.FC = () => {
   const [formDirty, setFormDirty] = useState(false);
   const [filterCategory, setFilterCategory] = useState<ExpenseCategory | ''>('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [companyInput, setCompanyInput] = useState('');
+  const [showCompanyDropdown, setShowCompanyDropdown] = useState(false);
+  const companyInputRef = useRef<HTMLInputElement>(null);
+  const companyDropdownRef = useRef<HTMLDivElement>(null);
 
   const getEmptyForm = useCallback((): ExpenseInput => ({
     expense_date: new Date().toISOString().split('T')[0],
@@ -71,6 +75,21 @@ const Expenses: React.FC = () => {
     return () => { isMounted = false; };
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        companyDropdownRef.current && 
+        !companyDropdownRef.current.contains(e.target as Node) &&
+        companyInputRef.current &&
+        !companyInputRef.current.contains(e.target as Node)
+      ) {
+        setShowCompanyDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const requestCloseModal = useCallback(() => {
     if (formDirty && !window.confirm('Закрыть без сохранения? Несохранённые данные будут потеряны.')) return;
     setIsModalOpen(false);
@@ -78,13 +97,6 @@ const Expenses: React.FC = () => {
     setFormState(getEmptyForm());
     setFormDirty(false);
   }, [formDirty, getEmptyForm]);
-
-  const openCreate = useCallback(() => {
-    setEditingId(null);
-    setFormState(getEmptyForm());
-    setFormDirty(false);
-    setIsModalOpen(true);
-  }, [getEmptyForm]);
 
   const openEdit = useCallback((exp: Expense) => {
     setEditingId(exp.id);
@@ -97,9 +109,47 @@ const Expenses: React.FC = () => {
       company_id: exp.company_id ?? null,
       note: exp.note ?? '',
     });
+    setCompanyInput(exp.company?.name || '');
     setFormDirty(false);
     setIsModalOpen(true);
   }, []);
+
+  const openCreate = useCallback(() => {
+    setEditingId(null);
+    setFormState(getEmptyForm());
+    setCompanyInput('');
+    setFormDirty(false);
+    setIsModalOpen(true);
+  }, [getEmptyForm]);
+
+  const filteredCompanies = companies.filter(c => 
+    c.name.toLowerCase().includes(companyInput.toLowerCase())
+  );
+
+  const selectCompany = (company: Company | null) => {
+    if (company) {
+      setFormState({ ...formState, company_id: company.id });
+      setCompanyInput(company.name);
+    } else {
+      setFormState({ ...formState, company_id: null });
+      setCompanyInput('');
+    }
+    setShowCompanyDropdown(false);
+    setFormDirty(true);
+  };
+
+  const handleCreateNewCompany = async () => {
+    if (!companyInput.trim()) return;
+    try {
+      const newCompany = await createCompany({ name: companyInput.trim(), type: 'both' });
+      setCompanies(prev => [...prev, newCompany]);
+      setFormState({ ...formState, company_id: newCompany.id });
+      setShowCompanyDropdown(false);
+      setFormDirty(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Ошибка создания компании');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -163,7 +213,7 @@ const Expenses: React.FC = () => {
             <Receipt className="text-blue-600" />
             Расходы
           </h2>
-          <p className="text-slate-500 text-sm">Транспорт, погрузка, обработка, аренда и прочее</p>
+          <p className="text-slate-500 text-sm">Логистика, погрузка, обработка, аренда и прочее</p>
         </div>
         <button
           type="button"
@@ -437,19 +487,66 @@ const Expenses: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Компания (опц.)</label>
-                  <select
-                    className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
-                    value={formState.company_id || ''}
-                    onChange={(e) => { setFormState({ ...formState, company_id: e.target.value || null }); setFormDirty(true); }}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Компания (опц.)</label>
+                <div className="relative">
+                  <input
+                    ref={companyInputRef}
+                    type="text"
+                    placeholder="Выберите или введите новую..."
+                    className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border pr-8"
+                    value={companyInput}
+                    onChange={(e) => {
+                      setCompanyInput(e.target.value);
+                      setShowCompanyDropdown(true);
+                      if (!e.target.value) {
+                        setFormState({ ...formState, company_id: null });
+                      }
+                      setFormDirty(true);
+                    }}
+                    onFocus={() => setShowCompanyDropdown(true)}
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    onClick={() => setShowCompanyDropdown(!showCompanyDropdown)}
                   >
-                    <option value="">Не указана</option>
-                    {companies.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
+                    <ChevronDown size={18} />
+                  </button>
+                  {showCompanyDropdown && (
+                    <div 
+                      ref={companyDropdownRef}
+                      className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto"
+                    >
+                      <button
+                        type="button"
+                        className="w-full text-left px-3 py-2 hover:bg-slate-50 text-slate-500"
+                        onClick={() => selectCompany(null)}
+                      >
+                        Не указана
+                      </button>
+                      {filteredCompanies.map((c) => (
+                        <button
+                          type="button"
+                          key={c.id}
+                          className={`w-full text-left px-3 py-2 hover:bg-slate-50 ${formState.company_id === c.id ? 'bg-blue-50 text-blue-700' : ''}`}
+                          onClick={() => selectCompany(c)}
+                        >
+                          {c.name}
+                        </button>
+                      ))}
+                      {companyInput.trim() && !companies.some(c => c.name.toLowerCase() === companyInput.toLowerCase()) && (
+                        <button
+                          type="button"
+                          className="w-full text-left px-3 py-2 hover:bg-green-50 text-green-700 border-t border-slate-100 flex items-center gap-2"
+                          onClick={handleCreateNewCompany}
+                        >
+                          <Plus size={16} />
+                          Создать «{companyInput.trim()}»
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
