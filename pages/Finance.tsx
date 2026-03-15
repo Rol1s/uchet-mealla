@@ -198,7 +198,7 @@ const Finance: React.FC = () => {
   const handleCreatePayer = async () => {
     if (!payerInput.trim()) return;
     try {
-      const newCompany = await createCompany({ name: payerInput.trim(), type: 'both' });
+      const newCompany = await createCompany({ name: payerInput.trim(), type: 'both', active: true });
       setCompanies(prev => [...prev, newCompany]);
       setFormState(prev => ({ ...prev, payer_id: newCompany.id }));
       setShowPayerDropdown(false);
@@ -211,7 +211,7 @@ const Finance: React.FC = () => {
   const handleCreateRecipient = async () => {
     if (!recipientInput.trim()) return;
     try {
-      const newCompany = await createCompany({ name: recipientInput.trim(), type: 'both' });
+      const newCompany = await createCompany({ name: recipientInput.trim(), type: 'both', active: true });
       setCompanies(prev => [...prev, newCompany]);
       setFormState(prev => ({ ...prev, recipient_id: newCompany.id }));
       setShowRecipientDropdown(false);
@@ -226,6 +226,7 @@ const Finance: React.FC = () => {
     if (!formState.description || !formState.amount) return;
     try {
       setSubmitting(true);
+      setError(null);
       if (editingId) {
         const updated = await updateExpense(editingId, formState);
         setExpenses((prev) => prev.map((ex) => (ex.id === editingId ? updated : ex)));
@@ -235,6 +236,7 @@ const Finance: React.FC = () => {
       }
       closeModal();
     } catch (err) {
+      console.error('Finance handleSubmit error:', err);
       setError(err instanceof Error ? err.message : 'Ошибка сохранения');
     } finally {
       setSubmitting(false);
