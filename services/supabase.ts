@@ -452,7 +452,10 @@ export async function createExpense(input: ExpenseInput): Promise<Expense> {
       recipient:companies!recipient_id(*)
     `)
     .single();
-  if (error) throw normalizeDbError(error);
+  if (error) {
+    console.error('createExpense RAW error:', JSON.stringify(error));
+    throw normalizeDbError(error);
+  }
   return data;
 }
 
