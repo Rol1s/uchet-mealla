@@ -447,7 +447,7 @@ export async function createExpense(input: ExpenseInput): Promise<Expense> {
     })
     .select(`
       *,
-      company:companies(*),
+      company:companies!company_id(*),
       payer:companies!payer_id(*),
       recipient:companies!recipient_id(*)
     `)
@@ -466,7 +466,7 @@ export async function updateExpense(id: string, updates: Partial<ExpenseInput>):
     .eq('id', id)
     .select(`
       *,
-      company:companies(*),
+      company:companies!company_id(*),
       payer:companies!payer_id(*),
       recipient:companies!recipient_id(*)
     `)

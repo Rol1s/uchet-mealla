@@ -41,15 +41,11 @@ const Finance: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [dateRange, setDateRange] = useState<DateRange>({ dateFrom: null, dateTo: null });
 
-  // Combobox states
-  const [payerInput, setPayerInput] = useState('');
-  const [recipientInput, setRecipientInput] = useState('');
-  const [showPayerDropdown, setShowPayerDropdown] = useState(false);
-  const [showRecipientDropdown, setShowRecipientDropdown] = useState(false);
-  const payerInputRef = useRef<HTMLInputElement>(null);
-  const payerDropdownRef = useRef<HTMLDivElement>(null);
-  const recipientInputRef = useRef<HTMLInputElement>(null);
-  const recipientDropdownRef = useRef<HTMLDivElement>(null);
+  // Combobox state for counterparty
+  const [counterpartyInput, setCounterpartyInput] = useState('');
+  const [showCounterpartyDropdown, setShowCounterpartyDropdown] = useState(false);
+  const counterpartyInputRef = useRef<HTMLInputElement>(null);
+  const counterpartyDropdownRef = useRef<HTMLDivElement>(null);
 
   const getEmptyForm = useCallback((): ExpenseInput => ({
     expense_date: new Date().toISOString().split('T')[0],
@@ -99,20 +95,12 @@ const Finance: React.FC = () => {
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
-        payerDropdownRef.current && 
-        !payerDropdownRef.current.contains(e.target as Node) &&
-        payerInputRef.current &&
-        !payerInputRef.current.contains(e.target as Node)
+        counterpartyDropdownRef.current && 
+        !counterpartyDropdownRef.current.contains(e.target as Node) &&
+        counterpartyInputRef.current &&
+        !counterpartyInputRef.current.contains(e.target as Node)
       ) {
-        setShowPayerDropdown(false);
-      }
-      if (
-        recipientDropdownRef.current && 
-        !recipientDropdownRef.current.contains(e.target as Node) &&
-        recipientInputRef.current &&
-        !recipientInputRef.current.contains(e.target as Node)
-      ) {
-        setShowRecipientDropdown(false);
+        setShowCounterpartyDropdown(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -124,8 +112,7 @@ const Finance: React.FC = () => {
     setEditingId(null);
     setFormState(getEmptyForm());
     setFormDirty(false);
-    setPayerInput('');
-    setRecipientInput('');
+    setCounterpartyInput('');
   }, [getEmptyForm]);
 
   const requestCloseModal = useCallback(() => {
@@ -136,8 +123,7 @@ const Finance: React.FC = () => {
   const openCreate = useCallback(() => {
     setEditingId(null);
     setFormState(getEmptyForm());
-    setPayerInput('');
-    setRecipientInput('');
+    setCounterpartyInput('');
     setFormDirty(false);
     setIsModalOpen(true);
   }, [getEmptyForm]);
@@ -158,63 +144,34 @@ const Finance: React.FC = () => {
       movement_id: exp.movement_id ?? null,
       note: exp.note ?? '',
     });
-    setPayerInput(exp.payer?.name || '');
-    setRecipientInput(exp.recipient?.name || '');
+    setCounterpartyInput(exp.company?.name || exp.payer?.name || exp.recipient?.name || '');
     setFormDirty(false);
     setIsModalOpen(true);
   }, []);
 
-  const filteredPayerCompanies = companies.filter(c => 
-    c.name.toLowerCase().includes(payerInput.toLowerCase())
-  );
-  const filteredRecipientCompanies = companies.filter(c => 
-    c.name.toLowerCase().includes(recipientInput.toLowerCase())
+  const filteredCounterpartyCompanies = companies.filter(c => 
+    c.name.toLowerCase().includes(counterpartyInput.toLowerCase())
   );
 
-  const selectPayer = (company: Company | null) => {
+  const selectCounterparty = (company: Company | null) => {
     if (company) {
-      setFormState(prev => ({ ...prev, payer_id: company.id }));
-      setPayerInput(company.name);
+      setFormState(prev => ({ ...prev, company_id: company.id }));
+      setCounterpartyInput(company.name);
     } else {
-      setFormState(prev => ({ ...prev, payer_id: null }));
-      setPayerInput('');
+      setFormState(prev => ({ ...prev, company_id: null }));
+      setCounterpartyInput('');
     }
-    setShowPayerDropdown(false);
+    setShowCounterpartyDropdown(false);
     setFormDirty(true);
   };
 
-  const selectRecipient = (company: Company | null) => {
-    if (company) {
-      setFormState(prev => ({ ...prev, recipient_id: company.id }));
-      setRecipientInput(company.name);
-    } else {
-      setFormState(prev => ({ ...prev, recipient_id: null }));
-      setRecipientInput('');
-    }
-    setShowRecipientDropdown(false);
-    setFormDirty(true);
-  };
-
-  const handleCreatePayer = async () => {
-    if (!payerInput.trim()) return;
+  const handleCreateCounterparty = async () => {
+    if (!counterpartyInput.trim()) return;
     try {
-      const newCompany = await createCompany({ name: payerInput.trim(), type: 'both', active: true });
+      const newCompany = await createCompany({ name: counterpartyInput.trim(), type: 'both', active: true });
       setCompanies(prev => [...prev, newCompany]);
-      setFormState(prev => ({ ...prev, payer_id: newCompany.id }));
-      setShowPayerDropdown(false);
-      setFormDirty(true);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка создания компании');
-    }
-  };
-
-  const handleCreateRecipient = async () => {
-    if (!recipientInput.trim()) return;
-    try {
-      const newCompany = await createCompany({ name: recipientInput.trim(), type: 'both', active: true });
-      setCompanies(prev => [...prev, newCompany]);
-      setFormState(prev => ({ ...prev, recipient_id: newCompany.id }));
-      setShowRecipientDropdown(false);
+      setFormState(prev => ({ ...prev, company_id: newCompany.id }));
+      setShowCounterpartyDropdown(false);
       setFormDirty(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка создания компании');
@@ -263,6 +220,7 @@ const Finance: React.FC = () => {
     const matchPaymentMethod = !filterPaymentMethod || e.payment_method === filterPaymentMethod;
     const matchSearch = !searchTerm ||
       e.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      e.company?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       e.payer?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       e.recipient?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (e.note || '').toLowerCase().includes(searchTerm.toLowerCase());
@@ -290,8 +248,7 @@ const Finance: React.FC = () => {
       { header: 'Сумма', accessor: (e: Expense) => formatCurrency(e.amount), width: 12 },
       { header: 'Оплата', accessor: (e: Expense) => e.payment_method === 'cash' ? 'Нал' : 'Безнал', width: 10 },
       { header: 'Статус', accessor: (e: Expense) => e.payment_status === 'paid' ? 'Оплачено' : 'Не оплачено', width: 12 },
-      { header: 'Плательщик', accessor: (e: Expense) => e.payer?.name || '', width: 20 },
-      { header: 'Получатель', accessor: (e: Expense) => e.recipient?.name || '', width: 20 },
+      { header: 'Контрагент', accessor: (e: Expense) => e.company?.name || e.payer?.name || e.recipient?.name || '', width: 20 },
       { header: 'Примечание', accessor: (e: Expense) => e.note || '', width: 25 },
     ], `Финансы_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
@@ -433,8 +390,9 @@ const Finance: React.FC = () => {
               </div>
               <div className="text-sm font-medium text-slate-800">{item.description}</div>
               <div className="text-xs text-slate-500 space-y-0.5">
-                {item.payer && <div>От: {item.payer.name}</div>}
-                {item.recipient && <div>Кому: {item.recipient.name}</div>}
+                {(item.company || item.payer || item.recipient) && (
+                  <div>{item.operation_type === 'income' ? 'От' : 'Кому'}: {item.company?.name || item.payer?.name || item.recipient?.name}</div>
+                )}
               </div>
               <div className="flex justify-between items-center">
                 <span className={`font-bold text-lg ${item.operation_type === 'income' ? 'text-green-700' : 'text-red-700'}`}>
@@ -479,8 +437,7 @@ const Finance: React.FC = () => {
                 <th className="px-3 py-3 whitespace-nowrap">Нал/БН</th>
                 <th className="px-3 py-3 whitespace-nowrap">Категория</th>
                 <th className="px-3 py-3 whitespace-nowrap">Описание</th>
-                <th className="px-3 py-3 whitespace-nowrap">Плательщик</th>
-                <th className="px-3 py-3 whitespace-nowrap">Получатель</th>
+                <th className="px-3 py-3 whitespace-nowrap">Контрагент</th>
                 <th className="px-3 py-3 text-right whitespace-nowrap">Сумма</th>
                 <th className="px-3 py-3 whitespace-nowrap">Статус</th>
                 <th className="px-3 py-3 whitespace-nowrap">Прим.</th>
@@ -490,7 +447,7 @@ const Finance: React.FC = () => {
             <tbody className="divide-y divide-slate-100">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className="px-3 py-8 text-center text-slate-400">
+                  <td colSpan={10} className="px-3 py-8 text-center text-slate-400">
                     Нет записей.
                   </td>
                 </tr>
@@ -520,8 +477,7 @@ const Finance: React.FC = () => {
                     <td className="px-3 py-2 font-medium text-slate-700 max-w-[200px] truncate" title={item.description}>
                       {item.description}
                     </td>
-                    <td className="px-3 py-2 text-slate-600 text-sm">{item.payer?.name || '—'}</td>
-                    <td className="px-3 py-2 text-slate-600 text-sm">{item.recipient?.name || '—'}</td>
+                    <td className="px-3 py-2 text-slate-600 text-sm">{item.company?.name || item.payer?.name || item.recipient?.name || '—'}</td>
                     <td className={`px-3 py-2 text-right font-bold ${item.operation_type === 'income' ? 'text-green-700' : 'text-red-700'}`}>
                       {item.operation_type === 'income' ? '+' : '-'}{item.amount.toLocaleString('ru-RU')}
                     </td>
@@ -559,7 +515,7 @@ const Finance: React.FC = () => {
             </tbody>
             <tfoot className="bg-slate-50 font-bold border-t border-slate-200">
               <tr>
-                <td colSpan={7} className="px-3 py-3 text-right">ИТОГО:</td>
+                <td colSpan={6} className="px-3 py-3 text-right">ИТОГО:</td>
                 <td className="px-3 py-3 text-right">
                   <span className="text-green-700">+{totalIncome.toLocaleString('ru-RU')}</span>
                   {' / '}
@@ -687,109 +643,56 @@ const Finance: React.FC = () => {
                 </div>
               </div>
 
-              {/* Payer (combobox) */}
+              {/* Counterparty (combobox) */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Плательщик</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  {formState.operation_type === 'income' ? 'От кого (контрагент)' : 'Кому (контрагент)'}
+                </label>
                 <div className="relative">
                   <input
-                    ref={payerInputRef}
+                    ref={counterpartyInputRef}
                     type="text"
-                    placeholder="Кто платит..."
+                    placeholder={formState.operation_type === 'income' ? 'Кто платит...' : 'Кому платим...'}
                     className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border pr-8"
-                    value={payerInput}
+                    value={counterpartyInput}
                     onChange={(e) => {
-                      setPayerInput(e.target.value);
-                      setShowPayerDropdown(true);
-                      if (!e.target.value) setFormState(prev => ({ ...prev, payer_id: null }));
+                      setCounterpartyInput(e.target.value);
+                      setShowCounterpartyDropdown(true);
+                      if (!e.target.value) setFormState(prev => ({ ...prev, company_id: null }));
                       setFormDirty(true);
                     }}
-                    onFocus={() => setShowPayerDropdown(true)}
+                    onFocus={() => setShowCounterpartyDropdown(true)}
                   />
                   <button
                     type="button"
                     className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                    onClick={() => setShowPayerDropdown(!showPayerDropdown)}
+                    onClick={() => setShowCounterpartyDropdown(!showCounterpartyDropdown)}
                   >
                     <ChevronDown size={18} />
                   </button>
-                  {showPayerDropdown && (
-                    <div ref={payerDropdownRef} className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                      <button type="button" className="w-full text-left px-3 py-2 hover:bg-slate-50 text-slate-500" onClick={() => selectPayer(null)}>
+                  {showCounterpartyDropdown && (
+                    <div ref={counterpartyDropdownRef} className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                      <button type="button" className="w-full text-left px-3 py-2 hover:bg-slate-50 text-slate-500" onClick={() => selectCounterparty(null)}>
                         Не указан
                       </button>
-                      {filteredPayerCompanies.map((c) => (
+                      {filteredCounterpartyCompanies.map((c) => (
                         <button
                           type="button"
                           key={c.id}
-                          className={`w-full text-left px-3 py-2 hover:bg-slate-50 ${formState.payer_id === c.id ? 'bg-blue-50 text-blue-700' : ''}`}
-                          onClick={() => selectPayer(c)}
+                          className={`w-full text-left px-3 py-2 hover:bg-slate-50 ${formState.company_id === c.id ? 'bg-blue-50 text-blue-700' : ''}`}
+                          onClick={() => selectCounterparty(c)}
                         >
                           {c.name}
                         </button>
                       ))}
-                      {payerInput.trim() && !companies.some(c => c.name.toLowerCase() === payerInput.toLowerCase()) && (
+                      {counterpartyInput.trim() && !companies.some(c => c.name.toLowerCase() === counterpartyInput.toLowerCase()) && (
                         <button
                           type="button"
                           className="w-full text-left px-3 py-2 hover:bg-green-50 text-green-700 border-t border-slate-100 flex items-center gap-2"
-                          onClick={handleCreatePayer}
+                          onClick={handleCreateCounterparty}
                         >
                           <Plus size={16} />
-                          Создать «{payerInput.trim()}»
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Recipient (combobox) */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Получатель</label>
-                <div className="relative">
-                  <input
-                    ref={recipientInputRef}
-                    type="text"
-                    placeholder="Кому платят..."
-                    className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border pr-8"
-                    value={recipientInput}
-                    onChange={(e) => {
-                      setRecipientInput(e.target.value);
-                      setShowRecipientDropdown(true);
-                      if (!e.target.value) setFormState(prev => ({ ...prev, recipient_id: null }));
-                      setFormDirty(true);
-                    }}
-                    onFocus={() => setShowRecipientDropdown(true)}
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                    onClick={() => setShowRecipientDropdown(!showRecipientDropdown)}
-                  >
-                    <ChevronDown size={18} />
-                  </button>
-                  {showRecipientDropdown && (
-                    <div ref={recipientDropdownRef} className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                      <button type="button" className="w-full text-left px-3 py-2 hover:bg-slate-50 text-slate-500" onClick={() => selectRecipient(null)}>
-                        Не указан
-                      </button>
-                      {filteredRecipientCompanies.map((c) => (
-                        <button
-                          type="button"
-                          key={c.id}
-                          className={`w-full text-left px-3 py-2 hover:bg-slate-50 ${formState.recipient_id === c.id ? 'bg-blue-50 text-blue-700' : ''}`}
-                          onClick={() => selectRecipient(c)}
-                        >
-                          {c.name}
-                        </button>
-                      ))}
-                      {recipientInput.trim() && !companies.some(c => c.name.toLowerCase() === recipientInput.toLowerCase()) && (
-                        <button
-                          type="button"
-                          className="w-full text-left px-3 py-2 hover:bg-green-50 text-green-700 border-t border-slate-100 flex items-center gap-2"
-                          onClick={handleCreateRecipient}
-                        >
-                          <Plus size={16} />
-                          Создать «{recipientInput.trim()}»
+                          Создать «{counterpartyInput.trim()}»
                         </button>
                       )}
                     </div>

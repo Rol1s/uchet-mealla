@@ -87,14 +87,41 @@ const Updates: React.FC = () => {
 
       <div className="space-y-4">
 
+        {/* v2.8 */}
+        <UpdateCard
+          version="v2.8"
+          date="15 марта 2026"
+          title="Финансы: упрощение + исправления"
+          color="purple"
+          icon={<Wallet size={20} />}
+          isLatest
+        >
+          <ChangeItem title="Контрагент вместо Плательщик/Получатель">
+            <ul className="list-disc list-inside space-y-0.5">
+              <li>Убраны два отдельных поля «Плательщик» и «Получатель» — было избыточно</li>
+              <li>Теперь одно поле <strong>«Контрагент»</strong> — кто на другой стороне сделки</li>
+              <li>Для прихода подпись «От кого», для расхода — «Кому»</li>
+              <li>Система уже знает что приход = деньги тебе, расход = деньги от тебя</li>
+            </ul>
+          </ChangeItem>
+          <ChangeItem title="Исправлена ошибка создания записей в Финансах">
+            <ul className="list-disc list-inside space-y-0.5">
+              <li>Записи теперь создаются корректно (исправлен конфликт FK-связей)</li>
+              <li>Улучшено логирование ошибок для быстрой диагностики</li>
+            </ul>
+          </ChangeItem>
+          <ChangeItem title="Старые данные сохранены">
+            <p>Записи с полями «Плательщик»/«Получатель» отображаются корректно. Колонки в БД не удалены.</p>
+          </ChangeItem>
+        </UpdateCard>
+
         {/* v2.7 */}
         <UpdateCard
           version="v2.7"
           date="15 марта 2026"
           title="Фильтры по датам, связь платежей, XLSX"
-          color="purple"
+          color="green"
           icon={<Calendar size={20} />}
-          isLatest
         >
           <ChangeItem title="Универсальный фильтр по датам">
             <ul className="list-disc list-inside space-y-0.5">

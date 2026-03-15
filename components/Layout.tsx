@@ -21,7 +21,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 
 const UPDATE_BANNER_KEY = 'metaltrack_update_dismissed';
-const UPDATE_BANNER_VERSION = '2026-03i';
+const UPDATE_BANNER_VERSION = '2026-03j';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -156,7 +156,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </div>
 
         <div className="p-3 lg:p-4 border-t border-slate-700 text-center">
-          <span className="text-xs text-slate-500">v2.7.0</span>
+          <span className="text-xs text-slate-500">v2.8.0</span>
         </div>
       </aside>
 
@@ -186,8 +186,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <div className="mb-4 flex items-start gap-3 rounded-xl bg-blue-50 border border-blue-200 p-4 text-sm">
                 <Megaphone className="text-blue-600 flex-shrink-0 mt-0.5" size={20} />
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-blue-900">v2.7 — Фильтры по датам, связь платежей, XLSX экспорт</p>
-                  <p className="text-blue-800 mt-0.5">Универсальный фильтр по датам на всех страницах. Привязка платежей к движениям. Улучшенный дашборд с карточками. Экспорт в Excel.</p>
+                  <p className="font-semibold text-blue-900">v2.8 — Финансы: один «Контрагент» вместо двух полей</p>
+                  <p className="text-blue-800 mt-0.5">Упрощена форма: одно поле контрагента (от кого / кому). Исправлена ошибка создания записей. Фильтры по датам, XLSX, привязка платежей.</p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <NavLink
                       to="/updates"
