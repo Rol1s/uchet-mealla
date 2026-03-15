@@ -50,6 +50,23 @@ const Inventory: React.FC = () => {
     return prices;
   }, [movements]);
 
+  // Calculate income/expense per position from movements
+  const movementsByPosition = useMemo(() => {
+    const map = new Map<string, { income: number; expense: number }>();
+    movements.forEach((m) => {
+      if (!map.has(m.position_id)) {
+        map.set(m.position_id, { income: 0, expense: 0 });
+      }
+      const entry = map.get(m.position_id)!;
+      if (m.operation === 'income') {
+        entry.income += m.weight;
+      } else {
+        entry.expense += m.weight;
+      }
+    });
+    return map;
+  }, [movements]);
+
   const inventory = useMemo(() => {
     let filtered = positions;
     if (ownershipFilter !== 'all') {
@@ -65,6 +82,8 @@ const Inventory: React.FC = () => {
           material: string;
           size: string;
           ownership: OwnershipType;
+          income: number;
+          expense: number;
           balance: number;
           value: number;
         }
@@ -79,11 +98,16 @@ const Inventory: React.FC = () => {
             material: p.material?.name || 'Неизвестный',
             size: p.size,
             ownership: p.ownership,
+            income: 0,
+            expense: 0,
             balance: 0,
             value: 0,
           });
         }
         const item = map.get(key)!;
+        const posMovements = movementsByPosition.get(p.id) || { income: 0, expense: 0 };
+        item.income += posMovements.income;
+        item.expense += posMovements.expense;
         item.balance += p.balance;
         const avgPrice = avgPriceByPosition.get(p.id) || 0;
         item.value += p.balance * avgPrice;
@@ -99,12 +123,15 @@ const Inventory: React.FC = () => {
     return filtered
       .map((p) => {
         const avgPrice = avgPriceByPosition.get(p.id) || 0;
+        const posMovements = movementsByPosition.get(p.id) || { income: 0, expense: 0 };
         return {
           id: p.id,
           company: p.company?.name || 'Неизвестная',
           material: p.material?.name || 'Неизвестный',
           size: p.size,
           ownership: p.ownership,
+          income: posMovements.income,
+          expense: posMovements.expense,
           balance: p.balance,
           value: p.balance * avgPrice,
         };
@@ -116,16 +143,17 @@ const Inventory: React.FC = () => {
         if (matDiff !== 0) return matDiff;
         return a.size.localeCompare(b.size);
       });
-  }, [positions, isGroupedByCompany, ownershipFilter, avgPriceByPosition]);
+  }, [positions, movements, isGroupedByCompany, ownershipFilter, avgPriceByPosition, movementsByPosition]);
 
+  const totalIncome = inventory.reduce((acc, i) => acc + i.income, 0);
+  const totalExpense = inventory.reduce((acc, i) => acc + i.expense, 0);
   const totalBalance = inventory.reduce((acc, i) => acc + i.balance, 0);
   const totalValue = inventory.reduce((acc, i) => acc + i.value, 0);
 
   const handleExport = () => {
-    // Simple CSV export
     const headers = isGroupedByCompany
-      ? ['Компания', 'Материал', 'Размер', 'Остаток', 'Стоимость']
-      : ['Материал', 'Размер', 'Компания', 'Остаток', 'Стоимость'];
+      ? ['Компания', 'Материал', 'Размер', 'Приход (т)', 'Расход (т)', 'Остаток (т)', 'Стоимость']
+      : ['Материал', 'Размер', 'Компания', 'Приход (т)', 'Расход (т)', 'Остаток (т)', 'Стоимость'];
 
     const rows = inventory.map((item) =>
       isGroupedByCompany
@@ -133,6 +161,8 @@ const Inventory: React.FC = () => {
             item.company,
             item.material,
             item.size,
+            item.income.toFixed(3),
+            item.expense.toFixed(3),
             item.balance.toFixed(3),
             item.value > 0 ? item.value.toFixed(0) : '',
           ]
@@ -140,6 +170,8 @@ const Inventory: React.FC = () => {
             item.material,
             item.size,
             item.company,
+            item.income.toFixed(3),
+            item.expense.toFixed(3),
             item.balance.toFixed(3),
             item.value > 0 ? item.value.toFixed(0) : '',
           ]
@@ -152,7 +184,6 @@ const Inventory: React.FC = () => {
     link.href = url;
     link.download = `inventory_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
-    // Release memory
     URL.revokeObjectURL(url);
   };
 
@@ -242,32 +273,52 @@ const Inventory: React.FC = () => {
                     <span className="badge badge-blue">{item.company}</span>
                   )}
                 </div>
-                <div className="flex justify-between items-end">
-                  <div
-                    className={`font-bold text-lg ${
-                      item.balance < 0 ? 'text-red-600' : 'text-slate-800'
-                    }`}
-                  >
-                    {item.balance.toFixed(3)} т
+                <div className="grid grid-cols-3 gap-2 text-sm">
+                  <div className="text-center">
+                    <div className="text-slate-500 text-xs">Приход</div>
+                    <div className="font-medium text-green-700">{item.income.toFixed(3)}</div>
                   </div>
-                  {item.value > 0 && (
-                    <div className="text-sm font-medium text-blue-700">
-                      {item.value.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽
+                  <div className="text-center">
+                    <div className="text-slate-500 text-xs">Расход</div>
+                    <div className="font-medium text-red-600">{item.expense.toFixed(3)}</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-slate-500 text-xs">Остаток</div>
+                    <div className={`font-bold ${item.balance < 0 ? 'text-red-600' : 'text-slate-800'}`}>
+                      {item.balance.toFixed(3)}
                     </div>
-                  )}
+                  </div>
                 </div>
-              </div>
-            ))}
-            <div className="bg-slate-50 rounded-xl border border-slate-200 p-4 flex justify-between items-center font-bold text-slate-800">
-              <span>ИТОГО:</span>
-              <div className="text-right">
-                <div>{totalBalance.toFixed(3)} т</div>
-                {totalValue > 0 && (
-                  <div className="text-sm text-blue-700">
-                    {totalValue.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽
+                {item.value > 0 && (
+                  <div className="text-right text-sm font-medium text-blue-700">
+                    {item.value.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽
                   </div>
                 )}
               </div>
+            ))}
+            <div className="bg-slate-50 rounded-xl border border-slate-200 p-4 font-bold text-slate-800">
+              <div className="flex justify-between items-center mb-2">
+                <span>ИТОГО:</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 text-sm">
+                <div className="text-center">
+                  <div className="text-slate-500 text-xs">Приход</div>
+                  <div className="text-green-700">{totalIncome.toFixed(3)}</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-slate-500 text-xs">Расход</div>
+                  <div className="text-red-600">{totalExpense.toFixed(3)}</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-slate-500 text-xs">Остаток</div>
+                  <div>{totalBalance.toFixed(3)}</div>
+                </div>
+              </div>
+              {totalValue > 0 && (
+                <div className="text-right text-sm text-blue-700 mt-2">
+                  {totalValue.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽
+                </div>
+              )}
             </div>
           </>
         )}
@@ -280,17 +331,23 @@ const Inventory: React.FC = () => {
             <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
               <tr>
                 {isGroupedByCompany && (
-                  <th className="px-4 py-3 whitespace-nowrap">Компания</th>
+                  <th className="px-3 py-3 whitespace-nowrap">Компания</th>
                 )}
-                <th className="px-4 py-3 whitespace-nowrap">Материал</th>
-                <th className="px-4 py-3 whitespace-nowrap">Размер</th>
+                <th className="px-3 py-3 whitespace-nowrap">Материал</th>
+                <th className="px-3 py-3 whitespace-nowrap">Размер</th>
                 {!isGroupedByCompany && (
-                  <th className="px-4 py-3 whitespace-nowrap">Компания</th>
+                  <th className="px-3 py-3 whitespace-nowrap">Компания</th>
                 )}
-                <th className="px-4 py-3 text-right font-bold bg-blue-50/50 whitespace-nowrap">
+                <th className="px-3 py-3 text-right whitespace-nowrap text-green-700">
+                  Приход (т)
+                </th>
+                <th className="px-3 py-3 text-right whitespace-nowrap text-red-600">
+                  Расход (т)
+                </th>
+                <th className="px-3 py-3 text-right font-bold bg-blue-50/50 whitespace-nowrap">
                   Остаток (т)
                 </th>
-                <th className="px-4 py-3 text-right whitespace-nowrap">
+                <th className="px-3 py-3 text-right whitespace-nowrap">
                   Стоимость (₽)
                 </th>
               </tr>
@@ -299,7 +356,7 @@ const Inventory: React.FC = () => {
               {inventory.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={isGroupedByCompany ? 7 : 8}
                     className="px-4 py-8 text-center text-slate-400"
                   >
                     Нет данных о движениях.
@@ -309,21 +366,27 @@ const Inventory: React.FC = () => {
                 inventory.map((item) => (
                   <tr key={item.id} className="hover:bg-slate-50 transition-colors">
                     {isGroupedByCompany && (
-                      <td className="px-4 py-3 font-medium text-slate-700">{item.company}</td>
+                      <td className="px-3 py-2 font-medium text-slate-700">{item.company}</td>
                     )}
-                    <td className="px-4 py-3 font-medium text-slate-800">{item.material}</td>
-                    <td className="px-4 py-3">{item.size}</td>
+                    <td className="px-3 py-2 font-medium text-slate-800">{item.material}</td>
+                    <td className="px-3 py-2">{item.size}</td>
                     {!isGroupedByCompany && (
-                      <td className="px-4 py-3 text-slate-600">{item.company}</td>
+                      <td className="px-3 py-2 text-slate-600">{item.company}</td>
                     )}
+                    <td className="px-3 py-2 text-right text-green-700">
+                      {item.income > 0 ? item.income.toFixed(3) : '—'}
+                    </td>
+                    <td className="px-3 py-2 text-right text-red-600">
+                      {item.expense > 0 ? item.expense.toFixed(3) : '—'}
+                    </td>
                     <td
-                      className={`px-4 py-3 text-right font-bold bg-blue-50/30 ${
+                      className={`px-3 py-2 text-right font-bold bg-blue-50/30 ${
                         item.balance < 0 ? 'text-red-600' : 'text-slate-800'
                       }`}
                     >
                       {item.balance.toFixed(3)}
                     </td>
-                    <td className="px-4 py-3 text-right text-slate-600">
+                    <td className="px-3 py-2 text-right text-slate-600">
                       {item.value > 0 ? item.value.toLocaleString('ru-RU', { maximumFractionDigits: 0 }) : '—'}
                     </td>
                   </tr>
@@ -333,13 +396,15 @@ const Inventory: React.FC = () => {
             <tfoot className="bg-slate-50 font-bold border-t border-slate-200">
               <tr>
                 <td
-                  colSpan={3}
-                  className="px-4 py-3 text-right"
+                  colSpan={isGroupedByCompany ? 3 : 4}
+                  className="px-3 py-3 text-right"
                 >
                   ИТОГО:
                 </td>
-                <td className="px-4 py-3 text-right">{totalBalance.toFixed(3)}</td>
-                <td className="px-4 py-3 text-right text-blue-700">
+                <td className="px-3 py-3 text-right text-green-700">{totalIncome.toFixed(3)}</td>
+                <td className="px-3 py-3 text-right text-red-600">{totalExpense.toFixed(3)}</td>
+                <td className="px-3 py-3 text-right">{totalBalance.toFixed(3)}</td>
+                <td className="px-3 py-3 text-right text-blue-700">
                   {totalValue > 0 ? totalValue.toLocaleString('ru-RU', { maximumFractionDigits: 0 }) : '—'}
                 </td>
               </tr>

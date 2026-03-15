@@ -109,6 +109,13 @@ const Updates: React.FC = () => {
               <li>Добавлена колонка «Метры» в таблице</li>
             </ul>
           </ChangeItem>
+          <ChangeItem title="Остатки на складе — Приход/Расход/Остаток">
+            <ul className="list-disc list-inside space-y-0.5">
+              <li>Теперь в таблице остатков три колонки: <strong>Приход</strong> (зелёный), <strong>Расход</strong> (красный), <strong>Остаток</strong></li>
+              <li>Видно сколько всего пришло, сколько ушло, и какой баланс — как в Excel</li>
+              <li>Итоговая строка тоже с разбивкой по приходу/расходу</li>
+            </ul>
+          </ChangeItem>
         </UpdateCard>
 
         {/* v2.4 */}
