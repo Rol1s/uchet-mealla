@@ -282,8 +282,9 @@ const Money: React.FC = () => {
         <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 sm:p-6">
           <h3 className="text-lg font-semibold text-slate-800 mb-4">Расходы по категориям</h3>
           {expensesByCategory.length > 0 ? (
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={expensesByCategory} layout="vertical">
+            <div className="w-full" style={{ minHeight: 280 }}>
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={expensesByCategory} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
                 <XAxis type="number" axisLine={false} tickLine={false} tick={{ fill: '#64748b' }}
                   tickFormatter={(v: number) => v.toLocaleString('ru-RU')} />
@@ -298,8 +299,9 @@ const Money: React.FC = () => {
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           ) : (
             <div className="h-64 flex items-center justify-center text-slate-400">Нет расходов</div>
           )}

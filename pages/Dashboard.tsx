@@ -190,11 +190,12 @@ const Dashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-100 h-72 sm:h-96 min-h-[260px] sm:min-h-[280px]">
+        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-100">
           <h3 className="text-lg font-semibold text-slate-800 mb-4">Остатки по материалам (тонны)</h3>
           {materialDistribution.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%" minHeight={280}>
-              <BarChart data={materialDistribution}>
+            <div className="w-full" style={{ minHeight: 280 }}>
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={materialDistribution}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b' }} />
@@ -211,10 +212,11 @@ const Dashboard: React.FC = () => {
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           ) : (
-            <div className="h-full flex items-center justify-center text-slate-400">
+            <div className="h-64 flex items-center justify-center text-slate-400">
               Нет данных для отображения
             </div>
           )}

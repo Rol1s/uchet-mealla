@@ -2,6 +2,52 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../services/supabase';
 import type { User } from '../types';
 
+const ROLE_CACHE_KEY = 'metaltrack_role';
+const PROFILE_FETCH_TIMEOUT_MS = 8000;
+const PROFILE_FETCH_RETRIES = 3;
+
+function getCachedRole(userId: string): 'admin' | 'operator' {
+  try {
+    const raw = localStorage.getItem(`${ROLE_CACHE_KEY}_${userId}`);
+    if (raw === 'admin' || raw === 'operator') return raw;
+  } catch {
+    // ignore
+  }
+  return 'operator';
+}
+
+function setCachedRole(userId: string, role: string): void {
+  try {
+    localStorage.setItem(`${ROLE_CACHE_KEY}_${userId}`, role);
+  } catch {
+    // ignore
+  }
+}
+
+function clearCachedRole(userId: string): void {
+  try {
+    localStorage.removeItem(`${ROLE_CACHE_KEY}_${userId}`);
+  } catch {
+    // ignore
+  }
+}
+
+async function fetchProfileWithRetry(userId: string): Promise<{ data: User | null; error: unknown }> {
+  for (let attempt = 0; attempt < PROFILE_FETCH_RETRIES; attempt++) {
+    const profilePromise = supabase.from('users').select('*').eq('id', userId).single();
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('timeout')), PROFILE_FETCH_TIMEOUT_MS)
+    );
+    try {
+      const result = (await Promise.race([profilePromise, timeoutPromise])) as { data: User | null; error: unknown };
+      if (result.data && !result.error) return result;
+    } catch {
+      // retry
+    }
+  }
+  return { data: null, error: new Error('Profile fetch failed after retries') };
+}
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
@@ -18,37 +64,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Быстрый показ интерфейса: сразу восстанавливаем сессию и кэшированную роль
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        const cachedRole = getCachedRole(session.user.id);
+        setUser({
+          id: session.user.id,
+          email: session.user.email || '',
+          name: session.user.email?.split('@')[0] || 'User',
+          role: cachedRole,
+          created_at: new Date().toISOString(),
+        });
+      } else {
+        setUser(null);
+      }
+      setLoading(false);
+    });
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
+        const fallbackRole = getCachedRole(session.user.id);
         const fallbackUser: User = {
           id: session.user.id,
           email: session.user.email || '',
           name: session.user.email?.split('@')[0] || 'User',
-          role: 'operator',
+          role: fallbackRole,
           created_at: new Date().toISOString(),
         };
 
-        try {
-          const profilePromise = supabase
-            .from('users')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Profile fetch timeout')), 15000)
-          );
-          const result = await Promise.race([profilePromise, timeoutPromise]) as { data: User | null; error: unknown };
-          const { data: profile, error } = result;
+        const { data: profile, error } = await fetchProfileWithRetry(session.user.id);
 
-          if (profile && !error) {
-            setUser(profile as User);
-          } else {
-            setUser((prev) => {
-              if (prev?.id === session.user.id) return prev;
-              return fallbackUser;
-            });
-          }
-        } catch {
+        if (profile && !error) {
+          setUser(profile as User);
+          setCachedRole(session.user.id, profile.role);
+        } else {
           setUser((prev) => {
             if (prev?.id === session.user.id) return prev;
             return fallbackUser;
@@ -73,6 +122,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
+    if (user?.id) clearCachedRole(user.id);
     setLoading(true);
     await supabase.auth.signOut();
   };
