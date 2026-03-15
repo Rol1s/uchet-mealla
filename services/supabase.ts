@@ -414,6 +414,8 @@ export async function getExpenses(): Promise<Expense[]> {
     .select(`
       *,
       company:companies(*),
+      payer:companies!payer_id(*),
+      recipient:companies!recipient_id(*),
       user:users(name, email)
     `)
     .order('expense_date', { ascending: false });
@@ -427,17 +429,23 @@ export async function createExpense(input: ExpenseInput): Promise<Expense> {
     .from('expenses')
     .insert({
       expense_date: input.expense_date,
+      operation_type: input.operation_type || 'expense',
       category: input.category,
       description: input.description,
       amount: input.amount,
+      payment_method: input.payment_method || 'cashless',
       payment_status: input.payment_status ?? 'unpaid',
+      payer_id: input.payer_id || null,
+      recipient_id: input.recipient_id || null,
       company_id: input.company_id || null,
       note: input.note || null,
       created_by: createdBy,
     })
     .select(`
       *,
-      company:companies(*)
+      company:companies(*),
+      payer:companies!payer_id(*),
+      recipient:companies!recipient_id(*)
     `)
     .single();
   if (error) throw normalizeDbError(error);
@@ -451,7 +459,9 @@ export async function updateExpense(id: string, updates: Partial<ExpenseInput>):
     .eq('id', id)
     .select(`
       *,
-      company:companies(*)
+      company:companies(*),
+      payer:companies!payer_id(*),
+      recipient:companies!recipient_id(*)
     `)
     .single();
   if (error) throw normalizeDbError(error);

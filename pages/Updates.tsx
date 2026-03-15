@@ -1,5 +1,5 @@
 import React from 'react';
-import { Megaphone, Sparkles, Package, Banknote, Edit3, Rocket, Ruler } from 'lucide-react';
+import { Megaphone, Sparkles, Package, Banknote, Edit3, Rocket, Ruler, Wallet } from 'lucide-react';
 
 interface UpdateCardProps {
   version: string;
@@ -87,14 +87,44 @@ const Updates: React.FC = () => {
 
       <div className="space-y-4">
 
+        {/* v2.6 */}
+        <UpdateCard
+          version="v2.6"
+          date="15 марта 2026"
+          title="Финансы: полный учёт денег"
+          color="purple"
+          icon={<Wallet size={20} />}
+          isLatest
+        >
+          <ChangeItem title="Раздел «Расходы» → «Финансы»">
+            <ul className="list-disc list-inside space-y-0.5">
+              <li>Объединены приходы и расходы денег в один раздел</li>
+              <li><strong>Тип операции</strong>: Приход / Расход</li>
+              <li><strong>Способ оплаты</strong>: Нал / Безнал — с фильтрацией</li>
+              <li><strong>Плательщик</strong>: кто платит (Никамет, Энергоинвест и т.д.)</li>
+              <li><strong>Получатель</strong>: кому платят</li>
+              <li>Карточки сверху показывают итоги: общий приход и расход</li>
+            </ul>
+          </ChangeItem>
+          <ChangeItem title="Фильтры">
+            <ul className="list-disc list-inside space-y-0.5">
+              <li>По типу: только приходы / только расходы</li>
+              <li>По оплате: только нал / только безнал</li>
+              <li>По категории: логистика, погрузка, обработка, аренда, прочее</li>
+            </ul>
+          </ChangeItem>
+          <ChangeItem title="Удалён отдельный раздел «Деньги»">
+            <p>Теперь всё в одном месте — в разделе «Финансы».</p>
+          </ChangeItem>
+        </UpdateCard>
+
         {/* v2.5 */}
         <UpdateCard
           version="v2.5"
           date="15 марта 2026"
           title="Погонные метры и галочка погрузки"
-          color="purple"
+          color="green"
           icon={<Ruler size={20} />}
-          isLatest
         >
           <ChangeItem title="Движение металла — новые поля">
             <ul className="list-disc list-inside space-y-0.5">

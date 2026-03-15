@@ -133,20 +133,27 @@ export interface InventoryItem {
 }
 
 export type ExpenseCategory = 'transport' | 'loading' | 'processing' | 'rent_salary' | 'other';
+export type FinanceOperationType = 'income' | 'expense';
 
 export interface Expense {
   id: string;
   expense_date: string;
+  operation_type: FinanceOperationType;
   category: ExpenseCategory;
   description: string;
   amount: number;
+  payment_method: PaymentMethodType;
   payment_status: PaymentStatusType;
+  payer_id: string | null;
+  recipient_id: string | null;
   company_id: string | null;
   note: string | null;
   created_by: string | null;
   created_at: string;
   // Joined fields
   company?: Company;
+  payer?: Company;
+  recipient?: Company;
 }
 
 // === Form Input Types ===
@@ -170,10 +177,14 @@ export interface MovementInput {
 
 export interface ExpenseInput {
   expense_date: string;
+  operation_type: FinanceOperationType;
   category: ExpenseCategory;
   description: string;
   amount: number;
+  payment_method: PaymentMethodType;
   payment_status: PaymentStatusType;
+  payer_id: string | null;
+  recipient_id: string | null;
   company_id: string | null;
   note: string;
 }

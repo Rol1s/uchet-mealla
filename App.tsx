@@ -13,8 +13,7 @@ const Rates = lazy(() => import('./pages/Rates'));
 const Works = lazy(() => import('./pages/Works'));
 const Companies = lazy(() => import('./pages/Companies'));
 const Materials = lazy(() => import('./pages/Materials'));
-const Expenses = lazy(() => import('./pages/Expenses'));
-const Money = lazy(() => import('./pages/Money'));
+const Finance = lazy(() => import('./pages/Finance'));
 const History = lazy(() => import('./pages/History'));
 const Help = lazy(() => import('./pages/Help'));
 const Updates = lazy(() => import('./pages/Updates'));
@@ -58,8 +57,7 @@ const App: React.FC = () => (
           <Route path="/inventory" element={<Inventory />} />
           <Route path="/rates" element={<Rates />} />
           <Route path="/works" element={<Works />} />
-          <Route path="/expenses" element={<Expenses />} />
-          <Route path="/money" element={<Money />} />
+          <Route path="/finance" element={<Finance />} />
           <Route path="/companies" element={<Companies />} />
           <Route path="/materials" element={<Materials />} />
           <Route path="/help" element={<Help />} />

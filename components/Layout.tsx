@@ -15,14 +15,13 @@ import {
   Menu,
   X,
   MoreVertical,
-  Receipt,
-  Banknote,
+  Wallet,
   Megaphone,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const UPDATE_BANNER_KEY = 'metaltrack_update_dismissed';
-const UPDATE_BANNER_VERSION = '2026-03g';
+const UPDATE_BANNER_VERSION = '2026-03h';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -54,8 +53,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { to: '/', label: 'Главная', icon: LayoutDashboard },
     { to: '/movements', label: 'Движение', icon: ArrowLeftRight },
     { to: '/inventory', label: 'Остатки', icon: Package },
-    { to: '/expenses', label: 'Расходы', icon: Receipt },
-    { to: '/money', label: 'Деньги', icon: Banknote },
+    { to: '/finance', label: 'Финансы', icon: Wallet },
     { to: '/works', label: 'Работы', icon: Hammer },
     { to: '/companies', label: 'Компании', icon: Building2 },
     { to: '/materials', label: 'Материалы', icon: Boxes },
@@ -158,7 +156,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </div>
 
         <div className="p-3 lg:p-4 border-t border-slate-700 text-center">
-          <span className="text-xs text-slate-500">v2.5.0</span>
+          <span className="text-xs text-slate-500">v2.6.0</span>
         </div>
       </aside>
 
@@ -188,7 +186,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <div className="mb-4 flex items-start gap-3 rounded-xl bg-blue-50 border border-blue-200 p-4 text-sm">
                 <Megaphone className="text-blue-600 flex-shrink-0 mt-0.5" size={20} />
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-blue-900">v2.5 — Погонные метры, combobox, приход/расход в остатках</p>
+                  <p className="font-semibold text-blue-900">v2.6 — Финансы: приход/расход, нал/безнал, плательщик/получатель</p>
                   <p className="text-blue-800 mt-0.5">Убрана колонка «Владение» из движений. В остатках вместо «Клиента» теперь показывается название компании (Энергоинвест).</p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <NavLink
