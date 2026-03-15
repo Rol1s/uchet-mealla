@@ -4,6 +4,8 @@ import { getMovements, createMovement, updateMovement, deleteMovement, getCompan
 import { useAuth } from '../context/AuthContext';
 import { Plus, Trash2, Search, Filter, Loader2, Edit2 } from 'lucide-react';
 
+const LOADING_COST_PER_TON = 1000;
+
 const Movements: React.FC = () => {
   const { isAdmin, user } = useAuth();
   const [movements, setMovements] = useState<Movement[]>([]);
@@ -27,11 +29,15 @@ const Movements: React.FC = () => {
     cost: 0,
     price_per_ton: 0,
     payment_method: 'cashless',
+    supplier_id: '',
+    buyer_id: '',
+    destination: '',
     note: '',
   }), []);
 
   const [formState, setFormState] = useState<MovementInput>(getEmptyForm);
   const [formDirty, setFormDirty] = useState(false);
+  const [costManuallyEdited, setCostManuallyEdited] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -61,18 +67,24 @@ const Movements: React.FC = () => {
     return () => { isMounted = false; };
   }, []);
 
-  const requestCloseModal = useCallback(() => {
-    if (formDirty && !window.confirm('Закрыть без сохранения? Несохранённые данные будут потеряны.')) return;
+  const closeModal = useCallback(() => {
     setIsModalOpen(false);
     setEditingId(null);
     setFormState(getEmptyForm());
     setFormDirty(false);
-  }, [formDirty, getEmptyForm]);
+    setCostManuallyEdited(false);
+  }, [getEmptyForm]);
+
+  const requestCloseModal = useCallback(() => {
+    if (formDirty && !window.confirm('Закрыть без сохранения? Несохранённые данные будут потеряны.')) return;
+    closeModal();
+  }, [formDirty, closeModal]);
 
   const openCreate = useCallback(() => {
     setEditingId(null);
     setFormState(getEmptyForm());
     setFormDirty(false);
+    setCostManuallyEdited(false);
     setIsModalOpen(true);
   }, [getEmptyForm]);
 
@@ -89,10 +101,31 @@ const Movements: React.FC = () => {
       cost: m.cost ?? 0,
       price_per_ton: m.price_per_ton ?? 0,
       payment_method: (m.payment_method as PaymentMethodType) ?? 'cashless',
+      supplier_id: m.supplier_id ?? '',
+      buyer_id: m.buyer_id ?? '',
+      destination: m.destination ?? '',
       note: m.note ?? '',
     });
     setFormDirty(false);
+    setCostManuallyEdited(true);
     setIsModalOpen(true);
+  }, []);
+
+  const updateFormField = useCallback(<K extends keyof MovementInput>(field: K, value: MovementInput[K]) => {
+    setFormState(prev => {
+      const next = { ...prev, [field]: value };
+      if (field === 'weight' && !costManuallyEdited) {
+        next.cost = Math.round((value as number) * LOADING_COST_PER_TON);
+      }
+      return next;
+    });
+    setFormDirty(true);
+  }, [costManuallyEdited]);
+
+  const handleCostChange = useCallback((value: number) => {
+    setFormState(prev => ({ ...prev, cost: value }));
+    setCostManuallyEdited(true);
+    setFormDirty(true);
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -108,9 +141,12 @@ const Movements: React.FC = () => {
           price_per_ton: formState.price_per_ton,
           note: formState.note,
           payment_method: formState.payment_method,
+          supplier_id: formState.supplier_id || null,
+          buyer_id: formState.buyer_id || null,
+          destination: formState.destination || null,
         });
         setMovements((prev) => prev.map((m) => (m.id === editingId ? updated : m)));
-        requestCloseModal();
+        closeModal();
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Ошибка сохранения');
       } finally {
@@ -148,7 +184,7 @@ const Movements: React.FC = () => {
       setSubmitting(true);
       const newMovement = await createMovement(formState);
       setMovements((prev) => [newMovement, ...prev]);
-      requestCloseModal();
+      closeModal();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка создания записи');
     } finally {
@@ -157,7 +193,6 @@ const Movements: React.FC = () => {
   };
 
   const handleDelete = async (id: string, createdBy: string | null) => {
-    // Only admin or creator can delete
     if (!isAdmin && createdBy !== user?.id) {
       alert('Вы можете удалять только свои записи');
       return;
@@ -173,14 +208,24 @@ const Movements: React.FC = () => {
     }
   };
 
+  const suppliers = companies.filter(c => c.type === 'supplier' || c.type === 'both');
+  const buyers = companies.filter(c => c.type === 'buyer' || c.type === 'both');
+
   const filteredMovements = movements.filter((m) => {
     const companyName = m.position?.company?.name || '';
     const materialName = m.position?.material?.name || '';
     const size = m.position?.size || '';
+    const supplierName = m.supplier?.name || '';
+    const buyerName = m.buyer?.name || '';
+    const destination = m.destination || '';
+    const term = searchTerm.toLowerCase();
     return (
-      companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      materialName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      size.toLowerCase().includes(searchTerm.toLowerCase())
+      companyName.toLowerCase().includes(term) ||
+      materialName.toLowerCase().includes(term) ||
+      size.toLowerCase().includes(term) ||
+      supplierName.toLowerCase().includes(term) ||
+      buyerName.toLowerCase().includes(term) ||
+      destination.toLowerCase().includes(term)
     );
   });
 
@@ -193,7 +238,7 @@ const Movements: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold text-slate-800">Движение металла</h2>
@@ -215,13 +260,12 @@ const Movements: React.FC = () => {
         </div>
       )}
 
-      {/* Filter Bar */}
-      <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col sm:flex-row gap-3 sm:gap-4">
+      <div className="bg-white p-3 rounded-xl shadow-sm border border-slate-200 flex flex-col sm:flex-row gap-3 sm:gap-4">
         <div className="relative flex-1 min-w-0">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
           <input
             type="text"
-            placeholder="Поиск по компании, материалу..."
+            placeholder="Поиск по компании, материалу, поставщику..."
             className="w-full pl-10 pr-4 py-3 sm:py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -270,6 +314,21 @@ const Movements: React.FC = () => {
                   {item.position?.ownership === 'own' ? 'Наш' : 'Клиента'}
                 </span>
               </div>
+              {item.operation === 'income' && item.supplier && (
+                <div className="text-sm text-slate-500">
+                  Поставщик: <span className="text-slate-700">{item.supplier.name}</span>
+                </div>
+              )}
+              {item.operation === 'expense' && item.buyer && (
+                <div className="text-sm text-slate-500">
+                  Покупатель: <span className="text-slate-700">{item.buyer.name}</span>
+                </div>
+              )}
+              {item.destination && (
+                <div className="text-sm text-slate-500">
+                  Куда: <span className="text-slate-700">{item.destination}</span>
+                </div>
+              )}
               <div className="flex justify-between items-center text-sm">
                 <span className="font-medium text-slate-800">Вес: {item.weight} т</span>
                 {item.price_per_ton ? (
@@ -280,7 +339,7 @@ const Movements: React.FC = () => {
                 <span className="font-bold text-slate-800">
                   {item.total_value ? `Сумма: ${item.total_value.toLocaleString('ru-RU')} ₽` : ''}
                 </span>
-                <span className="text-slate-400">{item.cost ? `Погр./Разгр.: ${item.cost}` : ''}</span>
+                <span className="text-slate-400">{item.cost ? `Погр./Разгр.: ${item.cost.toLocaleString('ru-RU')}` : ''}</span>
               </div>
               {item.payment_method && (
                 <span className="text-xs text-slate-500">
@@ -315,44 +374,46 @@ const Movements: React.FC = () => {
         )}
       </div>
 
-      {/* Table: desktop only */}
+      {/* Table: desktop only - full width */}
       <div className="hidden md:block bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
               <tr>
-                <th className="px-6 py-4 whitespace-nowrap">Дата</th>
-                <th className="px-6 py-4 whitespace-nowrap">Компания</th>
-                <th className="px-6 py-4 whitespace-nowrap">Операция</th>
-                <th className="px-6 py-4 whitespace-nowrap">Материал</th>
-                <th className="px-6 py-4 whitespace-nowrap">Размер</th>
-                <th className="px-6 py-4 whitespace-nowrap">Владение</th>
-                <th className="px-6 py-4 text-right whitespace-nowrap">Вес (т)</th>
-                <th className="px-6 py-4 text-right whitespace-nowrap">Цена/т (₽)</th>
-                <th className="px-6 py-4 text-right whitespace-nowrap bg-blue-50/50">Сумма (₽)</th>
-                <th className="px-6 py-4 text-right whitespace-nowrap">Погр./Разгр.</th>
-                <th className="px-6 py-4 whitespace-nowrap">Оплата</th>
-                <th className="px-6 py-4 whitespace-nowrap">Примечание</th>
-                <th className="px-6 py-4 text-center">Действия</th>
+                <th className="px-3 py-3 whitespace-nowrap">Дата</th>
+                <th className="px-3 py-3 whitespace-nowrap">Компания</th>
+                <th className="px-3 py-3 whitespace-nowrap">Операция</th>
+                <th className="px-3 py-3 whitespace-nowrap">Материал</th>
+                <th className="px-3 py-3 whitespace-nowrap">Размер</th>
+                <th className="px-3 py-3 whitespace-nowrap">Владение</th>
+                <th className="px-3 py-3 whitespace-nowrap">Поставщик/Покупатель</th>
+                <th className="px-3 py-3 whitespace-nowrap">Куда</th>
+                <th className="px-3 py-3 text-right whitespace-nowrap">Вес (т)</th>
+                <th className="px-3 py-3 text-right whitespace-nowrap">Цена/т</th>
+                <th className="px-3 py-3 text-right whitespace-nowrap bg-blue-50/50">Сумма</th>
+                <th className="px-3 py-3 text-right whitespace-nowrap">Погр./Разгр.</th>
+                <th className="px-3 py-3 whitespace-nowrap">Оплата</th>
+                <th className="px-3 py-3 whitespace-nowrap">Примечание</th>
+                <th className="px-3 py-3 text-center">Действия</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredMovements.length === 0 ? (
                 <tr>
-                  <td colSpan={13} className="px-6 py-8 text-center text-slate-400">
+                  <td colSpan={15} className="px-3 py-8 text-center text-slate-400">
                     Нет записей. Добавьте первую операцию.
                   </td>
                 </tr>
               ) : (
                 filteredMovements.map((item) => (
                   <tr key={item.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-3">
+                    <td className="px-3 py-2">
                       {new Date(item.movement_date).toLocaleDateString('ru-RU')}
                     </td>
-                    <td className="px-6 py-3 font-medium text-slate-700">
+                    <td className="px-3 py-2 font-medium text-slate-700">
                       {item.position?.company?.name || '—'}
                     </td>
-                    <td className="px-6 py-3">
+                    <td className="px-3 py-2">
                       <span
                         className={`badge ${
                           item.operation === 'income' ? 'badge-green' : 'badge-red'
@@ -361,9 +422,9 @@ const Movements: React.FC = () => {
                         {item.operation === 'income' ? 'Приход' : 'Расход'}
                       </span>
                     </td>
-                    <td className="px-6 py-3">{item.position?.material?.name || '—'}</td>
-                    <td className="px-6 py-3">{item.position?.size || '—'}</td>
-                    <td className="px-6 py-3">
+                    <td className="px-3 py-2">{item.position?.material?.name || '—'}</td>
+                    <td className="px-3 py-2">{item.position?.size || '—'}</td>
+                    <td className="px-3 py-2">
                       <span
                         className={`badge ${
                           item.position?.ownership === 'own' ? 'badge-blue' : 'badge-orange'
@@ -372,19 +433,30 @@ const Movements: React.FC = () => {
                         {item.position?.ownership === 'own' ? 'Наш' : 'Клиента'}
                       </span>
                     </td>
-                    <td className="px-6 py-3 text-right font-medium">{item.weight}</td>
-                    <td className="px-6 py-3 text-right text-slate-500">
+                    <td className="px-3 py-2 text-slate-600">
+                      {item.operation === 'income' 
+                        ? (item.supplier?.name || '—')
+                        : (item.buyer?.name || '—')
+                      }
+                    </td>
+                    <td className="px-3 py-2 text-slate-600">{item.destination || '—'}</td>
+                    <td className="px-3 py-2 text-right font-medium">{item.weight}</td>
+                    <td className="px-3 py-2 text-right text-slate-500">
                       {item.price_per_ton ? item.price_per_ton.toLocaleString('ru-RU') : '—'}
                     </td>
-                    <td className="px-6 py-3 text-right font-bold bg-blue-50/30 text-slate-800">
+                    <td className="px-3 py-2 text-right font-bold bg-blue-50/30 text-slate-800">
                       {item.total_value ? item.total_value.toLocaleString('ru-RU') : '—'}
                     </td>
-                    <td className="px-6 py-3 text-right text-slate-500">{item.cost || '—'}</td>
-                    <td className="px-6 py-3 text-slate-600">
+                    <td className="px-3 py-2 text-right text-slate-500">
+                      {item.cost ? item.cost.toLocaleString('ru-RU') : '—'}
+                    </td>
+                    <td className="px-3 py-2 text-slate-600">
                       {item.payment_method === 'cash' ? 'Нал' : 'Безнал'}
                     </td>
-                    <td className="px-6 py-3 text-slate-500 truncate max-w-xs">{item.note}</td>
-                    <td className="px-6 py-3 text-center">
+                    <td className="px-3 py-2 text-slate-500 truncate max-w-[150px]" title={item.note || ''}>
+                      {item.note || '—'}
+                    </td>
+                    <td className="px-3 py-2 text-center">
                       {(isAdmin || item.created_by === user?.id) && (
                         <>
                           <button
@@ -397,7 +469,7 @@ const Movements: React.FC = () => {
                           <button
                             onClick={() => handleDelete(item.id, item.created_by)}
                             className="text-slate-400 hover:text-red-600 transition-colors p-1"
-                            title={isAdmin || item.created_by === user?.id ? 'Удалить' : 'Только свои записи'}
+                            title="Удалить"
                           >
                             <Trash2 size={16} />
                           </button>
@@ -440,7 +512,7 @@ const Movements: React.FC = () => {
                   required
                   className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
                   value={formState.movement_date}
-                  onChange={(e) => { setFormState({ ...formState, movement_date: e.target.value }); setFormDirty(true); }}
+                  onChange={(e) => updateFormField('movement_date', e.target.value)}
                 />
               </div>
               <div>
@@ -448,20 +520,20 @@ const Movements: React.FC = () => {
                 <select
                   className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
                   value={formState.operation}
-                  onChange={(e) => { setFormState({ ...formState, operation: e.target.value as OperationType }); setFormDirty(true); }}
+                  onChange={(e) => updateFormField('operation', e.target.value as OperationType)}
                 >
                   <option value="income">Приход</option>
                   <option value="expense">Расход</option>
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Компания</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Компания (владелец)</label>
                 <select
                   required
                   disabled={!!editingId}
                   className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border disabled:bg-slate-100 disabled:text-slate-500"
                   value={formState.company_id}
-                  onChange={(e) => { setFormState({ ...formState, company_id: e.target.value }); setFormDirty(true); }}
+                  onChange={(e) => updateFormField('company_id', e.target.value)}
                 >
                   <option value="">Выберите компанию...</option>
                   {companies.map((c) => (
@@ -478,7 +550,7 @@ const Movements: React.FC = () => {
                   disabled={!!editingId}
                   className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border disabled:bg-slate-100 disabled:text-slate-500"
                   value={formState.material_id}
-                  onChange={(e) => { setFormState({ ...formState, material_id: e.target.value }); setFormDirty(true); }}
+                  onChange={(e) => updateFormField('material_id', e.target.value)}
                 >
                   <option value="">Выберите материал...</option>
                   {materials.map((m) => (
@@ -493,11 +565,11 @@ const Movements: React.FC = () => {
                 <input
                   type="text"
                   required
-                  placeholder="Например: 530x6"
+                  placeholder="Например: 530"
                   disabled={!!editingId}
                   className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border disabled:bg-slate-100 disabled:text-slate-500"
                   value={formState.size}
-                  onChange={(e) => { setFormState({ ...formState, size: e.target.value }); setFormDirty(true); }}
+                  onChange={(e) => updateFormField('size', e.target.value)}
                 />
               </div>
               <div>
@@ -506,18 +578,69 @@ const Movements: React.FC = () => {
                   className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border disabled:bg-slate-100 disabled:text-slate-500"
                   value={formState.ownership}
                   disabled={!!editingId}
-                  onChange={(e) => { setFormState({ ...formState, ownership: e.target.value as OwnershipType }); setFormDirty(true); }}
+                  onChange={(e) => updateFormField('ownership', e.target.value as OwnershipType)}
                 >
                   <option value="own">Наш товар</option>
                   <option value="client_storage">Товар клиента</option>
                 </select>
               </div>
+
+              {/* Поставщик (для прихода) */}
+              {formState.operation === 'income' && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Поставщик</label>
+                  <select
+                    className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
+                    value={formState.supplier_id}
+                    onChange={(e) => updateFormField('supplier_id', e.target.value)}
+                  >
+                    <option value="">Выберите поставщика...</option>
+                    {suppliers.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Покупатель (для расхода) */}
+              {formState.operation === 'expense' && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Покупатель</label>
+                  <select
+                    className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
+                    value={formState.buyer_id}
+                    onChange={(e) => updateFormField('buyer_id', e.target.value)}
+                  >
+                    <option value="">Выберите покупателя...</option>
+                    {buyers.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Место хранения / Куда */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Куда (место хранения)</label>
+                <input
+                  type="text"
+                  placeholder="Например: Кулаково, транзит..."
+                  className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
+                  value={formState.destination}
+                  onChange={(e) => updateFormField('destination', e.target.value)}
+                />
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Способ оплаты</label>
                 <select
                   className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
                   value={formState.payment_method}
-                  onChange={(e) => { setFormState({ ...formState, payment_method: e.target.value as PaymentMethodType }); setFormDirty(true); }}
+                  onChange={(e) => updateFormField('payment_method', e.target.value as PaymentMethodType)}
                 >
                   <option value="cash">Нал</option>
                   <option value="cashless">Безнал</option>
@@ -532,7 +655,7 @@ const Movements: React.FC = () => {
                   placeholder="Введите вес"
                   className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
                   value={formState.weight || ''}
-                  onChange={(e) => { setFormState({ ...formState, weight: parseFloat(e.target.value) || 0 }); setFormDirty(true); }}
+                  onChange={(e) => updateFormField('weight', parseFloat(e.target.value) || 0)}
                 />
               </div>
               <div>
@@ -543,7 +666,7 @@ const Movements: React.FC = () => {
                   placeholder="Цена за тонну"
                   className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
                   value={formState.price_per_ton || ''}
-                  onChange={(e) => { setFormState({ ...formState, price_per_ton: parseFloat(e.target.value) || 0 }); setFormDirty(true); }}
+                  onChange={(e) => updateFormField('price_per_ton', parseFloat(e.target.value) || 0)}
                 />
               </div>
               <div>
@@ -554,14 +677,14 @@ const Movements: React.FC = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Стоимость погр./разгр.
+                  Стоимость погр./разгр. <span className="text-slate-400 font-normal">(авто: 1000×вес)</span>
                 </label>
                 <input
                   type="number"
                   placeholder="Введите стоимость"
                   className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
                   value={formState.cost || ''}
-                  onChange={(e) => { setFormState({ ...formState, cost: parseFloat(e.target.value) || 0 }); setFormDirty(true); }}
+                  onChange={(e) => handleCostChange(parseFloat(e.target.value) || 0)}
                 />
               </div>
               <div className="sm:col-span-2">
@@ -570,7 +693,7 @@ const Movements: React.FC = () => {
                   rows={2}
                   className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
                   value={formState.note}
-                  onChange={(e) => { setFormState({ ...formState, note: e.target.value }); setFormDirty(true); }}
+                  onChange={(e) => updateFormField('note', e.target.value)}
                 />
               </div>
 

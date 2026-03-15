@@ -22,7 +22,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 
 const UPDATE_BANNER_KEY = 'metaltrack_update_dismissed';
-const UPDATE_BANNER_VERSION = '2026-03b';
+const UPDATE_BANNER_VERSION = '2026-03c';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -181,14 +181,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </span>
           </div>
         </header>
-        <div className="flex-1 overflow-y-auto p-4 lg:p-8 bg-slate-50 pb-24 md:pb-6 lg:pb-10 min-h-0">
-          <div className="max-w-7xl mx-auto min-h-[60vh]">
+        <div className="flex-1 overflow-y-auto p-3 lg:p-6 bg-slate-50 pb-24 md:pb-6 lg:pb-8 min-h-0">
+          <div className="w-full min-h-[60vh]">
             {updateBannerVisible && (
               <div className="mb-4 flex items-start gap-3 rounded-xl bg-blue-50 border border-blue-200 p-4 text-sm">
                 <Megaphone className="text-blue-600 flex-shrink-0 mt-0.5" size={20} />
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-blue-900">Обновление 2 (март 2026)</p>
-                  <p className="text-blue-800 mt-0.5">Раздел «Деньги» — три вкладки: Сводка, Приход и Расход. Детальный журнал платежей как в Excel: дата, сумма, нал/безнал, плательщик, получатель.</p>
+                  <p className="font-semibold text-blue-900">Обновление 3 (март 2026)</p>
+                  <p className="text-blue-800 mt-0.5">Новые поля в движении: <strong>Поставщик</strong> (для прихода), <strong>Покупатель</strong> (для расхода), <strong>Куда</strong> (место хранения). Авторасчёт погр./разгр. = 1000×вес. Таблицы расширены на всю ширину.</p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <NavLink
                       to="/help?scroll=updates"

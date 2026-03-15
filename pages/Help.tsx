@@ -518,6 +518,36 @@ const Help: React.FC = () => {
       <Section id="updates" icon={<Megaphone size={20} />} title="Что нового (март 2026)" defaultOpen>
         <div className="text-sm text-slate-600 space-y-5 mt-3">
 
+          {/* Update 3 */}
+          <div className="border border-green-200 rounded-xl overflow-hidden">
+            <div className="bg-green-600 px-4 py-2.5 flex items-center justify-between">
+              <h4 className="font-bold text-white text-sm">Обновление 3 — Поставщик, Покупатель, Куда</h4>
+              <span className="text-green-200 text-xs">15 марта 2026</span>
+            </div>
+            <div className="p-4 space-y-3">
+              <div>
+                <p className="font-semibold text-slate-800 mb-1">Новые поля в движении металла</p>
+                <ul className="list-disc list-inside space-y-0.5 text-slate-600">
+                  <li><strong>Поставщик</strong> — у кого купили металл (только для прихода). Выбирается из справочника компаний.</li>
+                  <li><strong>Покупатель</strong> — кому продали металл (только для расхода). Выбирается из справочника компаний.</li>
+                  <li><strong>Куда (место хранения)</strong> — куда поехал товар: «Кулаково», «транзит», «на Радем» и т.д. Свободный текст.</li>
+                </ul>
+              </div>
+              <div>
+                <p className="font-semibold text-slate-800 mb-1">Авторасчёт погрузки/разгрузки</p>
+                <p className="text-slate-600">При вводе веса автоматически считается стоимость погр./разгр. = <strong>1000 × вес</strong>. Можно исправить вручную.</p>
+              </div>
+              <div>
+                <p className="font-semibold text-slate-800 mb-1">Расширенные таблицы</p>
+                <p className="text-slate-600">Таблицы теперь занимают всю ширину экрана. Меньше пустого места — больше данных.</p>
+              </div>
+              <div>
+                <p className="font-semibold text-slate-800 mb-1">Исправлен баг</p>
+                <p className="text-slate-600">При нажатии «Сохранить» больше не появляется диалог «Закрыть без сохранения».</p>
+              </div>
+            </div>
+          </div>
+
           {/* Update 2 */}
           <div className="border border-blue-200 rounded-xl overflow-hidden">
             <div className="bg-blue-600 px-4 py-2.5 flex items-center justify-between">
@@ -686,13 +716,16 @@ const Help: React.FC = () => {
           fields={[
             { name: 'Дата', desc: 'Дата операции. По умолчанию сегодня.', required: true },
             { name: 'Операция', desc: 'Приход — купил/получил. Расход — продал/отгрузил.', required: true },
-            { name: 'Компания', desc: 'От кого купил или кому продал.', required: true },
+            { name: 'Компания (владелец)', desc: 'Чей металл (обычно Энергоинвест).', required: true },
             { name: 'Материал', desc: 'Тип металла: труба, лист, арматура и т.д.', required: true },
-            { name: 'Размер', desc: 'Свободный текст. Пример: 530x6, 89x4, Лист 10мм.', required: true },
+            { name: 'Размер', desc: 'Свободный текст. Пример: 530, 219, 630.', required: true },
             { name: 'Владение', desc: '«Наш товар» или «Товар клиента».', required: true },
-            { name: 'Вес (тонн)', desc: 'Вес в тоннах. Можно с тысячными: 1.250.', required: true },
+            { name: 'Поставщик', desc: 'У кого купили (только для прихода). Кентавр, Грипос и т.д.' },
+            { name: 'Покупатель', desc: 'Кому продали (только для расхода). Радем, Никамет и т.д.' },
+            { name: 'Куда', desc: 'Место хранения или куда поехало: Кулаково, транзит, на Радем.' },
+            { name: 'Вес (тонн)', desc: 'Вес в тоннах. Можно с тысячными: 1.967.', required: true },
             { name: 'Цена за тонну', desc: 'Цена закупки/продажи. Сумма сделки = вес x цена (авто).' },
-            { name: 'Стоимость погр./разгр.', desc: 'Сколько заплатили за погрузку этой партии.' },
+            { name: 'Стоимость погр./разгр.', desc: 'Авторасчёт: 1000 × вес. Можно исправить вручную.' },
             { name: 'Примечание', desc: 'Любой комментарий. Номер машины, накладной и т.д.' },
           ]}
         />

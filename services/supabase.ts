@@ -263,7 +263,9 @@ export async function getMovements(): Promise<Movement[]> {
         *,
         company:companies(*),
         material:materials(*)
-      )
+      ),
+      supplier:companies!supplier_id(*),
+      buyer:companies!buyer_id(*)
     `)
     .order('movement_date', { ascending: false });
   if (error) throw normalizeDbError(error);
@@ -292,6 +294,9 @@ export async function createMovement(input: MovementInput): Promise<Movement> {
       price_per_ton: input.price_per_ton || 0,
       total_value: totalValue,
       payment_method: input.payment_method || 'cashless',
+      supplier_id: input.supplier_id || null,
+      buyer_id: input.buyer_id || null,
+      destination: input.destination || null,
       note: input.note || null,
       movement_date: input.movement_date,
       created_by: createdBy,
@@ -302,7 +307,9 @@ export async function createMovement(input: MovementInput): Promise<Movement> {
         *,
         company:companies(*),
         material:materials(*)
-      )
+      ),
+      supplier:companies!supplier_id(*),
+      buyer:companies!buyer_id(*)
     `)
     .single();
 
@@ -312,7 +319,7 @@ export async function createMovement(input: MovementInput): Promise<Movement> {
   return movement;
 }
 
-export type MovementUpdatePayload = Partial<Pick<Movement, 'movement_date' | 'operation' | 'weight' | 'cost' | 'price_per_ton' | 'note' | 'payment_method'>>;
+export type MovementUpdatePayload = Partial<Pick<Movement, 'movement_date' | 'operation' | 'weight' | 'cost' | 'price_per_ton' | 'note' | 'payment_method' | 'supplier_id' | 'buyer_id' | 'destination'>>;
 
 export async function updateMovement(id: string, payload: MovementUpdatePayload): Promise<Movement> {
   const updates: Record<string, unknown> = { ...payload };
@@ -334,7 +341,9 @@ export async function updateMovement(id: string, payload: MovementUpdatePayload)
         *,
         company:companies(*),
         material:materials(*)
-      )
+      ),
+      supplier:companies!supplier_id(*),
+      buyer:companies!buyer_id(*)
     `)
     .single();
   if (error) throw normalizeDbError(error);

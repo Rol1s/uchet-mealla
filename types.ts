@@ -69,12 +69,17 @@ export interface Movement {
   price_per_ton: number;
   total_value: number;
   payment_method: PaymentMethodType;
+  supplier_id: string | null;
+  buyer_id: string | null;
+  destination: string | null;
   note: string | null;
   movement_date: string;
   created_by: string | null;
   created_at: string;
   // Joined fields
   position?: Position;
+  supplier?: Company;
+  buyer?: Company;
 }
 
 // === Expense ===
@@ -154,6 +159,9 @@ export interface MovementInput {
   cost: number;
   price_per_ton: number;
   payment_method: PaymentMethodType;
+  supplier_id: string;
+  buyer_id: string;
+  destination: string;
   note: string;
   movement_date: string;
 }
