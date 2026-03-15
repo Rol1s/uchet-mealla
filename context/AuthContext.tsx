@@ -18,7 +18,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
         const fallbackUser: User = {
           id: session.user.id,
@@ -43,10 +43,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (profile && !error) {
             setUser(profile as User);
           } else {
-            setUser(fallbackUser);
+            setUser((prev) => {
+              if (prev?.id === session.user.id) return prev;
+              return fallbackUser;
+            });
           }
         } catch {
-          setUser(fallbackUser);
+          setUser((prev) => {
+            if (prev?.id === session.user.id) return prev;
+            return fallbackUser;
+          });
         }
       } else {
         setUser(null);

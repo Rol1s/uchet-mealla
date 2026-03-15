@@ -58,6 +58,8 @@ export interface Position {
 }
 
 // === Movement ===
+export type PaymentMethodType = 'cash' | 'cashless';
+
 export interface Movement {
   id: string;
   position_id: string;
@@ -66,6 +68,7 @@ export interface Movement {
   cost: number;
   price_per_ton: number;
   total_value: number;
+  payment_method: PaymentMethodType;
   note: string | null;
   movement_date: string;
   created_by: string | null;
@@ -73,6 +76,9 @@ export interface Movement {
   // Joined fields
   position?: Position;
 }
+
+// === Expense ===
+export type PaymentStatusType = 'paid' | 'unpaid';
 
 // === Work Log ===
 export interface WorkLog {
@@ -120,7 +126,6 @@ export interface InventoryItem {
   balance: number;
 }
 
-// === Expense ===
 export type ExpenseCategory = 'transport' | 'loading' | 'processing' | 'rent_salary' | 'other';
 
 export interface Expense {
@@ -129,6 +134,7 @@ export interface Expense {
   category: ExpenseCategory;
   description: string;
   amount: number;
+  payment_status: PaymentStatusType;
   company_id: string | null;
   note: string | null;
   created_by: string | null;
@@ -147,6 +153,7 @@ export interface MovementInput {
   weight: number;
   cost: number;
   price_per_ton: number;
+  payment_method: PaymentMethodType;
   note: string;
   movement_date: string;
 }
@@ -156,6 +163,7 @@ export interface ExpenseInput {
   category: ExpenseCategory;
   description: string;
   amount: number;
+  payment_status: PaymentStatusType;
   company_id: string | null;
   note: string;
 }

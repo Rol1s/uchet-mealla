@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Movement, Company, Material, MovementInput, OwnershipType, OperationType } from '../types';
-import { getMovements, createMovement, deleteMovement, getCompanies, getMaterials, getPositionBalance } from '../services/supabase';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Movement, Company, Material, MovementInput, OwnershipType, OperationType, PaymentMethodType } from '../types';
+import { getMovements, createMovement, updateMovement, deleteMovement, getCompanies, getMaterials } from '../services/supabase';
 import { useAuth } from '../context/AuthContext';
-import { Plus, Trash2, Search, Filter, Loader2, Edit2, AlertTriangle } from 'lucide-react';
+import { Plus, Trash2, Search, Filter, Loader2, Edit2 } from 'lucide-react';
 
 const Movements: React.FC = () => {
   const { isAdmin, user } = useAuth();
@@ -14,9 +14,9 @@ const Movements: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
-  // Form State
-  const [formState, setFormState] = useState<MovementInput>({
+  const getEmptyForm = useCallback((): MovementInput => ({
     movement_date: new Date().toISOString().split('T')[0],
     operation: 'income',
     company_id: '',
@@ -26,8 +26,12 @@ const Movements: React.FC = () => {
     weight: 0,
     cost: 0,
     price_per_ton: 0,
+    payment_method: 'cashless',
     note: '',
-  });
+  }), []);
+
+  const [formState, setFormState] = useState<MovementInput>(getEmptyForm);
+  const [formDirty, setFormDirty] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -57,14 +61,68 @@ const Movements: React.FC = () => {
     return () => { isMounted = false; };
   }, []);
 
+  const requestCloseModal = useCallback(() => {
+    if (formDirty && !window.confirm('Закрыть без сохранения? Несохранённые данные будут потеряны.')) return;
+    setIsModalOpen(false);
+    setEditingId(null);
+    setFormState(getEmptyForm());
+    setFormDirty(false);
+  }, [formDirty, getEmptyForm]);
+
+  const openCreate = useCallback(() => {
+    setEditingId(null);
+    setFormState(getEmptyForm());
+    setFormDirty(false);
+    setIsModalOpen(true);
+  }, [getEmptyForm]);
+
+  const openEdit = useCallback((m: Movement) => {
+    setEditingId(m.id);
+    setFormState({
+      movement_date: m.movement_date,
+      operation: m.operation,
+      company_id: m.position?.company_id ?? '',
+      material_id: m.position?.material_id ?? '',
+      size: m.position?.size ?? '',
+      ownership: (m.position?.ownership as OwnershipType) ?? 'own',
+      weight: m.weight,
+      cost: m.cost ?? 0,
+      price_per_ton: m.price_per_ton ?? 0,
+      payment_method: (m.payment_method as PaymentMethodType) ?? 'cashless',
+      note: m.note ?? '',
+    });
+    setFormDirty(false);
+    setIsModalOpen(true);
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (editingId) {
+      try {
+        setSubmitting(true);
+        const updated = await updateMovement(editingId, {
+          movement_date: formState.movement_date,
+          operation: formState.operation,
+          weight: formState.weight,
+          cost: formState.cost,
+          price_per_ton: formState.price_per_ton,
+          note: formState.note,
+          payment_method: formState.payment_method,
+        });
+        setMovements((prev) => prev.map((m) => (m.id === editingId ? updated : m)));
+        requestCloseModal();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Ошибка сохранения');
+      } finally {
+        setSubmitting(false);
+      }
+      return;
+    }
+
     if (!formState.company_id || !formState.material_id || !formState.size) return;
 
-    // Check for negative balance warning
     if (formState.operation === 'expense') {
       try {
-        // We need to check if there's an existing position and its balance
         const existingMovements = movements.filter(
           (m) =>
             m.position?.company_id === formState.company_id &&
@@ -72,11 +130,9 @@ const Movements: React.FC = () => {
             m.position?.size === formState.size &&
             m.position?.ownership === formState.ownership
         );
-
         const currentBalance = existingMovements.reduce((acc, m) => {
           return m.operation === 'income' ? acc + m.weight : acc - m.weight;
         }, 0);
-
         if (currentBalance - formState.weight < 0) {
           const confirmed = window.confirm(
             `Внимание! После операции баланс станет отрицательным (${(currentBalance - formState.weight).toFixed(3)} т). Продолжить?`
@@ -84,7 +140,7 @@ const Movements: React.FC = () => {
           if (!confirmed) return;
         }
       } catch {
-        // Ignore balance check errors
+        // ignore
       }
     }
 
@@ -92,8 +148,7 @@ const Movements: React.FC = () => {
       setSubmitting(true);
       const newMovement = await createMovement(formState);
       setMovements((prev) => [newMovement, ...prev]);
-      setIsModalOpen(false);
-      setFormState((prev) => ({ ...prev, size: '', weight: 0, cost: 0, price_per_ton: 0, note: '' }));
+      requestCloseModal();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка создания записи');
     } finally {
@@ -146,7 +201,7 @@ const Movements: React.FC = () => {
         </div>
         <button
           type="button"
-          onClick={() => setIsModalOpen(true)}
+          onClick={openCreate}
           className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 sm:py-2 rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all min-h-[48px] sm:min-h-0 touch-manipulation"
         >
           <Plus size={20} />
@@ -227,18 +282,33 @@ const Movements: React.FC = () => {
                 </span>
                 <span className="text-slate-400">{item.cost ? `Погр./Разгр.: ${item.cost}` : ''}</span>
               </div>
+              {item.payment_method && (
+                <span className="text-xs text-slate-500">
+                  {item.payment_method === 'cash' ? 'Нал' : 'Безнал'}
+                </span>
+              )}
               {item.note ? (
                 <p className="text-sm text-slate-500 truncate">{item.note}</p>
               ) : null}
               {(isAdmin || item.created_by === user?.id) && (
-                <button
-                  type="button"
-                  onClick={() => handleDelete(item.id, item.created_by)}
-                  className="mt-2 p-2 text-slate-400 hover:text-red-600 transition-colors touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-red-50"
-                  aria-label="Удалить"
-                >
-                  <Trash2 size={20} />
-                </button>
+                <div className="mt-2 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => openEdit(item)}
+                    className="p-2 text-slate-400 hover:text-blue-600 transition-colors touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-blue-50"
+                    aria-label="Редактировать"
+                  >
+                    <Edit2 size={20} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(item.id, item.created_by)}
+                    className="p-2 text-slate-400 hover:text-red-600 transition-colors touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-red-50"
+                    aria-label="Удалить"
+                  >
+                    <Trash2 size={20} />
+                  </button>
+                </div>
               )}
             </div>
           ))
@@ -261,6 +331,7 @@ const Movements: React.FC = () => {
                 <th className="px-6 py-4 text-right whitespace-nowrap">Цена/т (₽)</th>
                 <th className="px-6 py-4 text-right whitespace-nowrap bg-blue-50/50">Сумма (₽)</th>
                 <th className="px-6 py-4 text-right whitespace-nowrap">Погр./Разгр.</th>
+                <th className="px-6 py-4 whitespace-nowrap">Оплата</th>
                 <th className="px-6 py-4 whitespace-nowrap">Примечание</th>
                 <th className="px-6 py-4 text-center">Действия</th>
               </tr>
@@ -268,7 +339,7 @@ const Movements: React.FC = () => {
             <tbody className="divide-y divide-slate-100">
               {filteredMovements.length === 0 ? (
                 <tr>
-                  <td colSpan={12} className="px-6 py-8 text-center text-slate-400">
+                  <td colSpan={13} className="px-6 py-8 text-center text-slate-400">
                     Нет записей. Добавьте первую операцию.
                   </td>
                 </tr>
@@ -309,19 +380,29 @@ const Movements: React.FC = () => {
                       {item.total_value ? item.total_value.toLocaleString('ru-RU') : '—'}
                     </td>
                     <td className="px-6 py-3 text-right text-slate-500">{item.cost || '—'}</td>
+                    <td className="px-6 py-3 text-slate-600">
+                      {item.payment_method === 'cash' ? 'Нал' : 'Безнал'}
+                    </td>
                     <td className="px-6 py-3 text-slate-500 truncate max-w-xs">{item.note}</td>
                     <td className="px-6 py-3 text-center">
-                      <button
-                        onClick={() => handleDelete(item.id, item.created_by)}
-                        className="text-slate-400 hover:text-red-600 transition-colors p-1"
-                        title={
-                          isAdmin || item.created_by === user?.id
-                            ? 'Удалить'
-                            : 'Только свои записи'
-                        }
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                      {(isAdmin || item.created_by === user?.id) && (
+                        <>
+                          <button
+                            onClick={() => openEdit(item)}
+                            className="text-slate-400 hover:text-blue-600 transition-colors p-1 mr-1"
+                            title="Редактировать"
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(item.id, item.created_by)}
+                            className="text-slate-400 hover:text-red-600 transition-colors p-1"
+                            title={isAdmin || item.created_by === user?.id ? 'Удалить' : 'Только свои записи'}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </>
+                      )}
                     </td>
                   </tr>
                 ))
@@ -331,15 +412,20 @@ const Movements: React.FC = () => {
         </div>
       </div>
 
-      {/* Add Modal */}
+      {/* Add/Edit Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 safe-area-inset">
-          <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] sm:max-h-[85vh] overflow-hidden animate-fade-in flex flex-col">
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 safe-area-inset"
+          onClick={(e) => e.target === e.currentTarget && requestCloseModal()}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] sm:max-h-[85vh] overflow-hidden animate-fade-in flex flex-col" onClick={(e) => e.stopPropagation()}>
             <div className="px-4 sm:px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50 flex-shrink-0">
-              <h3 className="font-bold text-lg text-slate-800">Новое движение</h3>
+              <h3 className="font-bold text-lg text-slate-800">{editingId ? 'Редактировать движение' : 'Новое движение'}</h3>
               <button
                 type="button"
-                onClick={() => setIsModalOpen(false)}
+                onClick={requestCloseModal}
                 className="p-2 -m-2 text-slate-400 hover:text-slate-600 text-2xl leading-none touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
                 aria-label="Закрыть"
               >
@@ -354,7 +440,7 @@ const Movements: React.FC = () => {
                   required
                   className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
                   value={formState.movement_date}
-                  onChange={(e) => setFormState({ ...formState, movement_date: e.target.value })}
+                  onChange={(e) => { setFormState({ ...formState, movement_date: e.target.value }); setFormDirty(true); }}
                 />
               </div>
               <div>
@@ -362,9 +448,7 @@ const Movements: React.FC = () => {
                 <select
                   className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
                   value={formState.operation}
-                  onChange={(e) =>
-                    setFormState({ ...formState, operation: e.target.value as OperationType })
-                  }
+                  onChange={(e) => { setFormState({ ...formState, operation: e.target.value as OperationType }); setFormDirty(true); }}
                 >
                   <option value="income">Приход</option>
                   <option value="expense">Расход</option>
@@ -374,9 +458,10 @@ const Movements: React.FC = () => {
                 <label className="block text-sm font-medium text-slate-700 mb-1">Компания</label>
                 <select
                   required
-                  className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
+                  disabled={!!editingId}
+                  className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border disabled:bg-slate-100 disabled:text-slate-500"
                   value={formState.company_id}
-                  onChange={(e) => setFormState({ ...formState, company_id: e.target.value })}
+                  onChange={(e) => { setFormState({ ...formState, company_id: e.target.value }); setFormDirty(true); }}
                 >
                   <option value="">Выберите компанию...</option>
                   {companies.map((c) => (
@@ -390,9 +475,10 @@ const Movements: React.FC = () => {
                 <label className="block text-sm font-medium text-slate-700 mb-1">Материал</label>
                 <select
                   required
-                  className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
+                  disabled={!!editingId}
+                  className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border disabled:bg-slate-100 disabled:text-slate-500"
                   value={formState.material_id}
-                  onChange={(e) => setFormState({ ...formState, material_id: e.target.value })}
+                  onChange={(e) => { setFormState({ ...formState, material_id: e.target.value }); setFormDirty(true); }}
                 >
                   <option value="">Выберите материал...</option>
                   {materials.map((m) => (
@@ -408,22 +494,33 @@ const Movements: React.FC = () => {
                   type="text"
                   required
                   placeholder="Например: 530x6"
-                  className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
+                  disabled={!!editingId}
+                  className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border disabled:bg-slate-100 disabled:text-slate-500"
                   value={formState.size}
-                  onChange={(e) => setFormState({ ...formState, size: e.target.value })}
+                  onChange={(e) => { setFormState({ ...formState, size: e.target.value }); setFormDirty(true); }}
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Владение</label>
                 <select
-                  className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
+                  className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border disabled:bg-slate-100 disabled:text-slate-500"
                   value={formState.ownership}
-                  onChange={(e) =>
-                    setFormState({ ...formState, ownership: e.target.value as OwnershipType })
-                  }
+                  disabled={!!editingId}
+                  onChange={(e) => { setFormState({ ...formState, ownership: e.target.value as OwnershipType }); setFormDirty(true); }}
                 >
                   <option value="own">Наш товар</option>
                   <option value="client_storage">Товар клиента</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Способ оплаты</label>
+                <select
+                  className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
+                  value={formState.payment_method}
+                  onChange={(e) => { setFormState({ ...formState, payment_method: e.target.value as PaymentMethodType }); setFormDirty(true); }}
+                >
+                  <option value="cash">Нал</option>
+                  <option value="cashless">Безнал</option>
                 </select>
               </div>
               <div>
@@ -435,9 +532,7 @@ const Movements: React.FC = () => {
                   placeholder="Введите вес"
                   className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
                   value={formState.weight || ''}
-                  onChange={(e) =>
-                    setFormState({ ...formState, weight: parseFloat(e.target.value) || 0 })
-                  }
+                  onChange={(e) => { setFormState({ ...formState, weight: parseFloat(e.target.value) || 0 }); setFormDirty(true); }}
                 />
               </div>
               <div>
@@ -448,9 +543,7 @@ const Movements: React.FC = () => {
                   placeholder="Цена за тонну"
                   className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
                   value={formState.price_per_ton || ''}
-                  onChange={(e) =>
-                    setFormState({ ...formState, price_per_ton: parseFloat(e.target.value) || 0 })
-                  }
+                  onChange={(e) => { setFormState({ ...formState, price_per_ton: parseFloat(e.target.value) || 0 }); setFormDirty(true); }}
                 />
               </div>
               <div>
@@ -468,9 +561,7 @@ const Movements: React.FC = () => {
                   placeholder="Введите стоимость"
                   className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
                   value={formState.cost || ''}
-                  onChange={(e) =>
-                    setFormState({ ...formState, cost: parseFloat(e.target.value) || 0 })
-                  }
+                  onChange={(e) => { setFormState({ ...formState, cost: parseFloat(e.target.value) || 0 }); setFormDirty(true); }}
                 />
               </div>
               <div className="sm:col-span-2">
@@ -479,14 +570,14 @@ const Movements: React.FC = () => {
                   rows={2}
                   className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
                   value={formState.note}
-                  onChange={(e) => setFormState({ ...formState, note: e.target.value })}
+                  onChange={(e) => { setFormState({ ...formState, note: e.target.value }); setFormDirty(true); }}
                 />
               </div>
 
               <div className="sm:col-span-2 flex justify-end gap-3 mt-4 pt-4 border-t border-slate-100 flex-shrink-0">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={requestCloseModal}
                   className="px-5 py-3 min-h-[48px] text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 touch-manipulation"
                 >
                   Отмена

@@ -274,6 +274,7 @@ export async function createMovement(input: MovementInput): Promise<Movement> {
       cost: input.cost,
       price_per_ton: input.price_per_ton || 0,
       total_value: totalValue,
+      payment_method: input.payment_method || 'cashless',
       note: input.note || null,
       movement_date: input.movement_date,
       created_by: user?.id,
@@ -292,6 +293,35 @@ export async function createMovement(input: MovementInput): Promise<Movement> {
 
   // Balance is updated by DB trigger update_position_balance_on_movement
   return movement;
+}
+
+export type MovementUpdatePayload = Partial<Pick<Movement, 'movement_date' | 'operation' | 'weight' | 'cost' | 'price_per_ton' | 'note' | 'payment_method'>>;
+
+export async function updateMovement(id: string, payload: MovementUpdatePayload): Promise<Movement> {
+  const updates: Record<string, unknown> = { ...payload };
+  if (payload.weight != null && payload.price_per_ton != null) {
+    updates.total_value = payload.weight * payload.price_per_ton;
+  } else if (payload.weight != null || payload.price_per_ton != null) {
+    const { data: current } = await supabase.from('movements').select('weight, price_per_ton').eq('id', id).single();
+    const w = payload.weight ?? (current?.weight ?? 0);
+    const p = payload.price_per_ton ?? (current?.price_per_ton ?? 0);
+    updates.total_value = w * p;
+  }
+  const { data, error } = await supabase
+    .from('movements')
+    .update(updates)
+    .eq('id', id)
+    .select(`
+      *,
+      position:positions(
+        *,
+        company:companies(*),
+        material:materials(*)
+      )
+    `)
+    .single();
+  if (error) throw error;
+  return data;
 }
 
 export async function deleteMovement(id: string): Promise<void> {
@@ -375,10 +405,25 @@ export async function createExpense(input: ExpenseInput): Promise<Expense> {
       category: input.category,
       description: input.description,
       amount: input.amount,
+      payment_status: input.payment_status ?? 'unpaid',
       company_id: input.company_id || null,
       note: input.note || null,
       created_by: user?.id,
     })
+    .select(`
+      *,
+      company:companies(*)
+    `)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateExpense(id: string, updates: Partial<ExpenseInput>): Promise<Expense> {
+  const { data, error } = await supabase
+    .from('expenses')
+    .update(updates)
+    .eq('id', id)
     .select(`
       *,
       company:companies(*)

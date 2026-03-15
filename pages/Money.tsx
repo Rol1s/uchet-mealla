@@ -55,10 +55,14 @@ const Money: React.FC = () => {
       .reduce((acc, m) => acc + (m.total_value || 0), 0);
 
     const totalExpenses = expenses.reduce((acc, e) => acc + e.amount, 0);
+    const expensesPaid = expenses
+      .filter((e) => e.payment_status === 'paid')
+      .reduce((acc, e) => acc + e.amount, 0);
+    const expensesUnpaid = totalExpenses - expensesPaid;
 
     const profit = totalSales - totalPurchases - totalExpenses;
 
-    return { totalPurchases, totalSales, totalExpenses, profit };
+    return { totalPurchases, totalSales, totalExpenses, expensesPaid, expensesUnpaid, profit };
   }, [movements, expenses]);
 
   const companyBreakdown = useMemo(() => {
@@ -201,6 +205,9 @@ const Money: React.FC = () => {
             <h3 className="text-xl sm:text-2xl font-bold text-slate-800">
               {financials.totalExpenses.toLocaleString('ru-RU')} ₽
             </h3>
+            <p className="text-xs text-slate-500 mt-1">
+              Оплачено: {financials.expensesPaid.toLocaleString('ru-RU')} ₽ · Не оплачено: {financials.expensesUnpaid.toLocaleString('ru-RU')} ₽
+            </p>
           </div>
         </div>
 
