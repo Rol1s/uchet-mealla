@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -17,8 +17,12 @@ import {
   MoreVertical,
   Receipt,
   Banknote,
+  Megaphone,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+
+const UPDATE_BANNER_KEY = 'metaltrack_update_dismissed';
+const UPDATE_BANNER_VERSION = '2026-03';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -27,6 +31,24 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { user, isAdmin, signOut } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [updateBannerVisible, setUpdateBannerVisible] = useState(false);
+
+  useEffect(() => {
+    try {
+      setUpdateBannerVisible(localStorage.getItem(UPDATE_BANNER_KEY) !== UPDATE_BANNER_VERSION);
+    } catch {
+      setUpdateBannerVisible(true);
+    }
+  }, []);
+
+  const dismissUpdateBanner = () => {
+    try {
+      localStorage.setItem(UPDATE_BANNER_KEY, UPDATE_BANNER_VERSION);
+    } catch {
+      // ignore
+    }
+    setUpdateBannerVisible(false);
+  };
 
   const navItems = [
     { to: '/', label: 'Главная', icon: LayoutDashboard },
@@ -160,7 +182,42 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
         </header>
         <div className="flex-1 overflow-y-auto p-4 lg:p-8 bg-slate-50 pb-24 md:pb-6 lg:pb-10">
-          <div className="max-w-7xl mx-auto">{children}</div>
+          <div className="max-w-7xl mx-auto">
+            {updateBannerVisible && (
+              <div className="mb-4 flex items-start gap-3 rounded-xl bg-blue-50 border border-blue-200 p-4 text-sm">
+                <Megaphone className="text-blue-600 flex-shrink-0 mt-0.5" size={20} />
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-blue-900">Обновление (март 2026)</p>
+                  <p className="text-blue-800 mt-0.5">Добавлены способ оплаты (нал/безнал), редактирование движений и расходов, статусы «Оплачено/Не оплачено», быстрее загрузка и надёжнее отображение роли.</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <NavLink
+                      to="/help?scroll=updates"
+                      className="text-blue-700 font-medium underline hover:no-underline"
+                    >
+                      Подробнее — что изменилось
+                    </NavLink>
+                    <span className="text-blue-400">·</span>
+                    <button
+                      type="button"
+                      onClick={dismissUpdateBanner}
+                      className="text-blue-600 hover:text-blue-800"
+                    >
+                      Скрыть уведомление
+                    </button>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={dismissUpdateBanner}
+                  className="p-1 text-blue-400 hover:text-blue-600 flex-shrink-0"
+                  aria-label="Скрыть"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            )}
+            {children}
+          </div>
         </div>
       </main>
 

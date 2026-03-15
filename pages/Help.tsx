@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   BookOpen,
@@ -25,6 +26,7 @@ import {
   Circle,
   Eye,
   ArrowRight,
+  Megaphone,
 } from 'lucide-react';
 
 interface SectionProps {
@@ -412,6 +414,7 @@ const Help: React.FC = () => {
   const [tab, setTab] = useState<'onboarding' | 'kb'>('onboarding');
 
   const sections = [
+    { id: 'updates', title: 'Что нового (март 2026)' },
     { id: 'login', title: '1. Вход в систему' },
     { id: 'roles', title: '2. Роли: оператор и админ' },
     { id: 'dashboard', title: '3. Главная' },
@@ -429,9 +432,21 @@ const Help: React.FC = () => {
     { id: 'faq', title: '15. Частые вопросы' },
   ];
 
+  const [searchParams] = useSearchParams();
+
   const scrollTo = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
+
+  useEffect(() => {
+    if (searchParams.get('scroll') === 'updates') {
+      setTab('kb');
+      const t = setTimeout(() => {
+        document.getElementById('updates')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 400);
+      return () => clearTimeout(t);
+    }
+  }, [searchParams]);
 
   return (
     <div className="max-w-4xl space-y-4">
@@ -498,6 +513,58 @@ const Help: React.FC = () => {
             ))}
         </div>
       </div>
+
+      {/* ========== WHAT'S NEW ========== */}
+      <Section id="updates" icon={<Megaphone size={20} />} title="Что нового (март 2026)" defaultOpen>
+        <div className="text-sm text-slate-600 space-y-4 mt-3">
+          <p className="font-medium text-slate-800">Ниже — всё, что добавили и изменили в приложении.</p>
+
+          <div>
+            <h4 className="font-semibold text-slate-800 mb-1">Движение металла</h4>
+            <ul className="list-disc list-inside space-y-0.5 text-slate-600">
+              <li><strong>Способ оплаты</strong> — при создании и редактировании движения можно выбрать «Нал» или «Безнал». В таблице движений добавлена колонка «Оплата».</li>
+              <li><strong>Редактирование</strong> — у каждой записи есть кнопка редактирования (карандаш). Можно изменить дату, операцию, вес, цену за тонну, погрузку/разгрузку, примечание и способ оплаты. Компанию, материал, размер и владение при редактировании не меняют (чтобы не сбивать остатки).</li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="font-semibold text-slate-800 mb-1">Расходы</h4>
+            <ul className="list-disc list-inside space-y-0.5 text-slate-600">
+              <li><strong>Редактирование</strong> — у каждой записи расхода появилась кнопка редактирования. Можно менять все поля: дату, категорию, описание, сумму, компанию, примечание и статус оплаты.</li>
+              <li><strong>Статус оплаты</strong> — при создании и редактировании расхода можно указать «Оплачено» или «Не оплачено». В таблице расходов отображается колонка «Статус» с цветными пометками.</li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="font-semibold text-slate-800 mb-1">Деньги (финансы)</h4>
+            <ul className="list-disc list-inside space-y-0.5 text-slate-600">
+              <li>В блоке «Расходы» теперь показывается разбивка: <strong>Оплачено: X ₽</strong> и <strong>Не оплачено: Y ₽</strong>.</li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="font-semibold text-slate-800 mb-1">Удобство и надёжность</h4>
+            <ul className="list-disc list-inside space-y-0.5 text-slate-600">
+              <li><strong>Защита от потери данных</strong> — при закрытии формы (движение или расход) без сохранения появляется вопрос «Закрыть без сохранения?», чтобы случайно не потерять введённое (например, примечание).</li>
+              <li><strong>Роль администратора</strong> — исправлена ситуация, когда роль «Админ» могла временно отображаться как «Оператор» из‑за медленной загрузки профиля. Теперь используется кэш роли и повторные запросы к серверу.</li>
+              <li><strong>Быстрее открытие приложения</strong> — интерфейс показывается сразу по сохранённой сессии, без ожидания ответа от базы. Профиль подгружается в фоне.</li>
+              <li><strong>Подгрузка разделов по мере перехода</strong> — страницы (Движение, Остатки, Расходы и т.д.) загружаются при первом открытии раздела, поэтому первый экран появляется быстрее.</li>
+            </ul>
+          </div>
+
+          <div className="bg-slate-50 rounded-lg p-4 mt-3">
+            <h4 className="font-semibold text-slate-800 mb-2">Как ускорить работу приложения</h4>
+            <ul className="text-sm text-slate-600 space-y-1">
+              <li>· Используйте стабильный интернет (Wi‑Fi или хороший мобильный сигнал).</li>
+              <li>· Откройте приложение в современном браузере (Chrome, Safari, Edge, Firefox).</li>
+              <li>· Не закрывайте вкладку с приложением — при повторном входе данные подгрузятся из кэша.</li>
+              <li>· Если долго грузится — проверьте соединение с интернетом или обновите страницу (F5).</li>
+            </ul>
+          </div>
+
+          <p className="text-slate-500 pt-2">Если что-то работает не так — напишите администратору или в поддержку.</p>
+        </div>
+      </Section>
 
       {/* ========== 1. LOGIN ========== */}
       <Section id="login" icon={<LogIn size={20} />} title="1. Вход в систему" defaultOpen>

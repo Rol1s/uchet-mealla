@@ -1,20 +1,28 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import AuthGuard from './components/AuthGuard';
 import Layout from './components/Layout';
 import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import Movements from './pages/Movements';
-import Inventory from './pages/Inventory';
-import Rates from './pages/Rates';
-import Works from './pages/Works';
-import Companies from './pages/Companies';
-import Materials from './pages/Materials';
-import Expenses from './pages/Expenses';
-import Money from './pages/Money';
-import History from './pages/History';
-import Help from './pages/Help';
+import { Loader2 } from 'lucide-react';
+
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Movements = lazy(() => import('./pages/Movements'));
+const Inventory = lazy(() => import('./pages/Inventory'));
+const Rates = lazy(() => import('./pages/Rates'));
+const Works = lazy(() => import('./pages/Works'));
+const Companies = lazy(() => import('./pages/Companies'));
+const Materials = lazy(() => import('./pages/Materials'));
+const Expenses = lazy(() => import('./pages/Expenses'));
+const Money = lazy(() => import('./pages/Money'));
+const History = lazy(() => import('./pages/History'));
+const Help = lazy(() => import('./pages/Help'));
+
+const PageFallback: React.FC = () => (
+  <div className="flex items-center justify-center min-h-[200px]">
+    <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+  </div>
+);
 
 const App: React.FC = () => {
   return (
@@ -30,7 +38,9 @@ const App: React.FC = () => {
             element={
               <AuthGuard>
                 <Layout>
-                  <Dashboard />
+                  <Suspense fallback={<PageFallback />}>
+                    <Dashboard />
+                  </Suspense>
                 </Layout>
               </AuthGuard>
             }
@@ -40,7 +50,9 @@ const App: React.FC = () => {
             element={
               <AuthGuard>
                 <Layout>
-                  <Movements />
+                  <Suspense fallback={<PageFallback />}>
+                    <Movements />
+                  </Suspense>
                 </Layout>
               </AuthGuard>
             }
@@ -50,7 +62,9 @@ const App: React.FC = () => {
             element={
               <AuthGuard>
                 <Layout>
-                  <Inventory />
+                  <Suspense fallback={<PageFallback />}>
+                    <Inventory />
+                  </Suspense>
                 </Layout>
               </AuthGuard>
             }
@@ -60,7 +74,9 @@ const App: React.FC = () => {
             element={
               <AuthGuard>
                 <Layout>
-                  <Rates />
+                  <Suspense fallback={<PageFallback />}>
+                    <Rates />
+                  </Suspense>
                 </Layout>
               </AuthGuard>
             }
@@ -70,7 +86,9 @@ const App: React.FC = () => {
             element={
               <AuthGuard>
                 <Layout>
-                  <Works />
+                  <Suspense fallback={<PageFallback />}>
+                    <Works />
+                  </Suspense>
                 </Layout>
               </AuthGuard>
             }
@@ -80,7 +98,9 @@ const App: React.FC = () => {
             element={
               <AuthGuard>
                 <Layout>
-                  <Expenses />
+                  <Suspense fallback={<PageFallback />}>
+                    <Expenses />
+                  </Suspense>
                 </Layout>
               </AuthGuard>
             }
@@ -90,7 +110,9 @@ const App: React.FC = () => {
             element={
               <AuthGuard>
                 <Layout>
-                  <Money />
+                  <Suspense fallback={<PageFallback />}>
+                    <Money />
+                  </Suspense>
                 </Layout>
               </AuthGuard>
             }
@@ -100,7 +122,9 @@ const App: React.FC = () => {
             element={
               <AuthGuard>
                 <Layout>
-                  <Companies />
+                  <Suspense fallback={<PageFallback />}>
+                    <Companies />
+                  </Suspense>
                 </Layout>
               </AuthGuard>
             }
@@ -110,7 +134,9 @@ const App: React.FC = () => {
             element={
               <AuthGuard>
                 <Layout>
-                  <Materials />
+                  <Suspense fallback={<PageFallback />}>
+                    <Materials />
+                  </Suspense>
                 </Layout>
               </AuthGuard>
             }
@@ -120,7 +146,9 @@ const App: React.FC = () => {
             element={
               <AuthGuard requireAdmin>
                 <Layout>
-                  <History />
+                  <Suspense fallback={<PageFallback />}>
+                    <History />
+                  </Suspense>
                 </Layout>
               </AuthGuard>
             }
@@ -130,7 +158,9 @@ const App: React.FC = () => {
             element={
               <AuthGuard>
                 <Layout>
-                  <Help />
+                  <Suspense fallback={<PageFallback />}>
+                    <Help />
+                  </Suspense>
                 </Layout>
               </AuthGuard>
             }
