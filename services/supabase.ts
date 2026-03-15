@@ -501,6 +501,42 @@ export async function deleteExpense(id: string): Promise<void> {
   if (error) throw normalizeDbError(error);
 }
 
+// === Counterparty helpers ===
+
+export async function getExpensesByCompany(companyId: string): Promise<Expense[]> {
+  const { data, error } = await supabase
+    .from('expenses')
+    .select(`
+      *,
+      company:companies!company_id(*),
+      payer:companies!payer_id(*),
+      recipient:companies!recipient_id(*)
+    `)
+    .or(`payer_id.eq.${companyId},recipient_id.eq.${companyId},company_id.eq.${companyId}`)
+    .order('expense_date', { ascending: false });
+  if (error) throw normalizeDbError(error);
+  return data || [];
+}
+
+export async function getMovementsByCompany(companyId: string): Promise<Movement[]> {
+  const { data, error } = await supabase
+    .from('movements')
+    .select(`
+      *,
+      position:positions(
+        *,
+        company:companies(*),
+        material:materials(*)
+      ),
+      supplier:companies!supplier_id(*),
+      buyer:companies!buyer_id(*)
+    `)
+    .or(`supplier_id.eq.${companyId},buyer_id.eq.${companyId}`)
+    .order('movement_date', { ascending: false });
+  if (error) throw normalizeDbError(error);
+  return data || [];
+}
+
 // === Audit ===
 
 export async function getAuditLogs(limit = 100): Promise<AuditLog[]> {

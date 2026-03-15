@@ -15,14 +15,15 @@ import {
   Menu,
   X,
   MoreVertical,
-  Wallet,
+  CreditCard,
+  Banknote,
   Megaphone,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useConfirm } from '../hooks/useConfirm';
 
 const UPDATE_BANNER_KEY = 'metaltrack_update_dismissed';
-const UPDATE_BANNER_VERSION = '2026-03k';
+const UPDATE_BANNER_VERSION = '2026-03-v3';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -55,7 +56,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { to: '/', label: 'Главная', icon: LayoutDashboard },
     { to: '/movements', label: 'Движение', icon: ArrowLeftRight },
     { to: '/inventory', label: 'Остатки', icon: Package },
-    { to: '/finance', label: 'Финансы', icon: Wallet },
+    { to: '/finance-cashless', label: 'Безнал', icon: CreditCard },
+    { to: '/finance-cash', label: 'Наличные', icon: Banknote },
     { to: '/works', label: 'Работы', icon: Hammer },
     { to: '/companies', label: 'Компании', icon: Building2 },
     { to: '/materials', label: 'Материалы', icon: Boxes },
@@ -158,7 +160,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </div>
 
         <div className="p-3 lg:p-4 border-t border-slate-700 text-center">
-          <span className="text-xs text-slate-500">v2.9.0</span>
+          <span className="text-xs text-slate-500">v3.0.0</span>
         </div>
       </aside>
 
@@ -188,8 +190,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <div className="mb-4 flex items-start gap-3 rounded-xl bg-blue-50 border border-blue-200 p-4 text-sm">
                 <Megaphone className="text-blue-600 flex-shrink-0 mt-0.5" size={20} />
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-blue-900">v2.9 — Рефакторинг: ConfirmDialog, Combobox, редактирование работ</p>
-                  <p className="text-blue-800 mt-0.5">Красивые подтверждения вместо системных, переиспользуемый Combobox, редактирование работ, обновлённая база знаний, чистка кода.</p>
+                  <p className="font-semibold text-blue-900">v3.0 — Разделение финансов: Безнал + Наличные, карточка контрагента</p>
+                  <p className="text-blue-800 mt-0.5">Два независимых финансовых раздела, поля Плательщик/Получатель, карточка контрагента с балансами и историей.</p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <NavLink
                       to="/updates"
@@ -259,15 +261,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <span>Остатки</span>
           </NavLink>
           <NavLink
-            to="/finance"
+            to="/finance-cashless"
             className={({ isActive }) =>
               `flex flex-col items-center justify-center flex-1 min-w-0 py-2 text-xs font-medium transition-colors touch-manipulation min-h-[48px] ${
                 isActive ? 'text-blue-600' : 'text-slate-500'
               }`
             }
           >
-            <Wallet size={22} className="flex-shrink-0 mb-0.5" />
-            <span>Финансы</span>
+            <CreditCard size={22} className="flex-shrink-0 mb-0.5" />
+            <span>Безнал</span>
           </NavLink>
           <button
             type="button"

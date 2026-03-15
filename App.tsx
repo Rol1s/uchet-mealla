@@ -13,7 +13,9 @@ const Rates = lazy(() => import('./pages/Rates'));
 const Works = lazy(() => import('./pages/Works'));
 const Companies = lazy(() => import('./pages/Companies'));
 const Materials = lazy(() => import('./pages/Materials'));
-const Finance = lazy(() => import('./pages/Finance'));
+const FinanceCashless = lazy(() => import('./pages/FinanceCashless'));
+const FinanceCash = lazy(() => import('./pages/FinanceCash'));
+const CounterpartyCard = lazy(() => import('./pages/CounterpartyCard'));
 const History = lazy(() => import('./pages/History'));
 const Help = lazy(() => import('./pages/Help'));
 const Updates = lazy(() => import('./pages/Updates'));
@@ -57,7 +59,10 @@ const App: React.FC = () => (
           <Route path="/inventory" element={<Inventory />} />
           <Route path="/rates" element={<Rates />} />
           <Route path="/works" element={<Works />} />
-          <Route path="/finance" element={<Finance />} />
+          <Route path="/finance" element={<Navigate to="/finance-cashless" replace />} />
+          <Route path="/finance-cashless" element={<FinanceCashless />} />
+          <Route path="/finance-cash" element={<FinanceCash />} />
+          <Route path="/counterparty/:id" element={<CounterpartyCard />} />
           <Route path="/companies" element={<Companies />} />
           <Route path="/materials" element={<Materials />} />
           <Route path="/help" element={<Help />} />

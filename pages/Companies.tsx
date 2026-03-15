@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Company, CompanyType } from '../types';
 import { getCompanies, createCompany, updateCompany, deleteCompany } from '../services/supabase';
 import { useConfirm } from '../hooks/useConfirm';
 import { useAuth } from '../context/AuthContext';
-import { Plus, Trash2, Edit2, Save, X, Building2, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Edit2, Save, X, Building2, Loader2, ExternalLink } from 'lucide-react';
 
 const COMPANY_TYPES: { value: CompanyType; label: string }[] = [
   { value: 'supplier', label: 'Поставщик' },
@@ -14,6 +15,7 @@ const COMPANY_TYPES: { value: CompanyType; label: string }[] = [
 const Companies: React.FC = () => {
   const { isAdmin } = useAuth();
   const { confirm, confirmDialog } = useConfirm();
+  const navigate = useNavigate();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -218,26 +220,36 @@ const Companies: React.FC = () => {
                     >
                       {company.active ? 'Активна' : 'Неактивна'}
                     </span>
-                    {isAdmin && (
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => startEdit(company)}
-                          className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
-                          aria-label="Редактировать"
-                        >
-                          <Edit2 size={20} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(company.id)}
-                          className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
-                          aria-label="Удалить"
-                        >
-                          <Trash2 size={20} />
-                        </button>
-                      </div>
-                    )}
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/counterparty/${company.id}`)}
+                        className="p-2 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
+                        aria-label="Карточка контрагента"
+                      >
+                        <ExternalLink size={20} />
+                      </button>
+                      {isAdmin && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => startEdit(company)}
+                            className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
+                            aria-label="Редактировать"
+                          >
+                            <Edit2 size={20} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(company.id)}
+                            className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
+                            aria-label="Удалить"
+                          >
+                            <Trash2 size={20} />
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </>
               )}
@@ -338,6 +350,13 @@ const Companies: React.FC = () => {
                         </td>
                         <td className="px-6 py-3 text-center opacity-0 group-hover:opacity-100 transition-opacity">
                           <div className="flex justify-center gap-2">
+                            <button
+                              onClick={() => navigate(`/counterparty/${company.id}`)}
+                              className="text-slate-500 hover:text-blue-600 p-1"
+                              title="Карточка контрагента"
+                            >
+                              <ExternalLink size={16} />
+                            </button>
                             {isAdmin && (
                               <>
                                 <button

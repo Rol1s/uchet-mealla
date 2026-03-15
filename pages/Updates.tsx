@@ -1,5 +1,5 @@
 import React from 'react';
-import { Megaphone, Sparkles, Package, Banknote, Edit3, Rocket, Ruler, Wallet, Calendar, FileSpreadsheet, LayoutDashboard, Wrench } from 'lucide-react';
+import { Megaphone, Sparkles, Package, Banknote, Edit3, Rocket, Ruler, Wallet, Calendar, FileSpreadsheet, LayoutDashboard, Wrench, CreditCard } from 'lucide-react';
 
 interface UpdateCardProps {
   version: string;
@@ -87,6 +87,46 @@ const Updates: React.FC = () => {
 
       <div className="space-y-4">
 
+        {/* v3.0 */}
+        <UpdateCard
+          version="v3.0"
+          date="15 марта 2026"
+          title="Разделение финансов: Безнал + Наличные"
+          color="purple"
+          icon={<CreditCard size={20} />}
+          isLatest
+        >
+          <ChangeItem title="Два независимых финансовых раздела">
+            <ul className="list-disc list-inside space-y-0.5">
+              <li><strong>Безнал</strong> и <strong>Наличные</strong> — два отдельных пункта в меню</li>
+              <li>Каждый раздел работает независимо: своя таблица, свои итоги, свой XLSX</li>
+              <li>Нал и безнал нигде не смешиваются</li>
+            </ul>
+          </ChangeItem>
+          <ChangeItem title="Плательщик и Получатель">
+            <ul className="list-disc list-inside space-y-0.5">
+              <li>Возвращены два отдельных поля: <strong>Плательщик</strong> (кто платит) и <strong>Получатель</strong> (кому)</li>
+              <li>Оба поля — Combobox с поиском и созданием новой компании</li>
+              <li>В таблице — отдельные колонки для плательщика и получателя</li>
+            </ul>
+          </ChangeItem>
+          <ChangeItem title="Карточка контрагента">
+            <ul className="list-disc list-inside space-y-0.5">
+              <li>Клик по имени компании → карточка с полной историей</li>
+              <li><strong>Блок «Безнал»</strong>: приход / расход / сальдо + таблица операций</li>
+              <li><strong>Блок «Наличные»</strong>: приход / расход / сальдо + таблица операций</li>
+              <li><strong>Блок «Металл»</strong>: поставки / покупки / баланс тонн</li>
+              <li>Фильтр по датам общий для всех блоков</li>
+            </ul>
+          </ChangeItem>
+          <ChangeItem title="Кнопка «Карточка» в справочнике компаний">
+            <p>В разделе Компании у каждой появилась иконка для перехода к карточке контрагента.</p>
+          </ChangeItem>
+          <ChangeItem title="Миграция данных">
+            <p>Все существующие финансовые записи автоматически считаются безналом. Данные сохранены полностью.</p>
+          </ChangeItem>
+        </UpdateCard>
+
         {/* v2.9 */}
         <UpdateCard
           version="v2.9"
@@ -94,7 +134,6 @@ const Updates: React.FC = () => {
           title="Рефакторинг: чистый код, новые компоненты"
           color="blue"
           icon={<Wrench size={20} />}
-          isLatest
         >
           <ChangeItem title="Удалён мёртвый код">
             <p>Удалены неиспользуемые страницы Money.tsx и Expenses.tsx (~950 строк). Вся функциональность давно перенесена в Финансы и Дашборд.</p>
