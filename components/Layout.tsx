@@ -257,15 +257,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <span>Остатки</span>
           </NavLink>
           <NavLink
-            to="/money"
+            to="/finance"
             className={({ isActive }) =>
               `flex flex-col items-center justify-center flex-1 min-w-0 py-2 text-xs font-medium transition-colors touch-manipulation min-h-[48px] ${
                 isActive ? 'text-blue-600' : 'text-slate-500'
               }`
             }
           >
-            <Banknote size={22} className="flex-shrink-0 mb-0.5" />
-            <span>Деньги</span>
+            <Wallet size={22} className="flex-shrink-0 mb-0.5" />
+            <span>Финансы</span>
           </NavLink>
           <button
             type="button"
