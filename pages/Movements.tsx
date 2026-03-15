@@ -304,15 +304,8 @@ const Movements: React.FC = () => {
               <div className="text-sm text-slate-600">
                 {item.position?.company?.name || '—'} · {item.position?.material?.name || '—'}
               </div>
-              <div className="flex flex-wrap gap-2 text-sm">
-                <span className="text-slate-500">Размер: {item.position?.size || '—'}</span>
-                <span
-                  className={`badge ${
-                    item.position?.ownership === 'own' ? 'badge-blue' : 'badge-orange'
-                  }`}
-                >
-                  {item.position?.ownership === 'own' ? 'Наш' : 'Клиента'}
-                </span>
+              <div className="text-sm text-slate-500">
+                Размер: {item.position?.size || '—'}
               </div>
               {item.operation === 'income' && item.supplier && (
                 <div className="text-sm text-slate-500">
@@ -385,7 +378,6 @@ const Movements: React.FC = () => {
                 <th className="px-3 py-3 whitespace-nowrap">Операция</th>
                 <th className="px-3 py-3 whitespace-nowrap">Материал</th>
                 <th className="px-3 py-3 whitespace-nowrap">Размер</th>
-                <th className="px-3 py-3 whitespace-nowrap">Владение</th>
                 <th className="px-3 py-3 whitespace-nowrap">Поставщик/Покупатель</th>
                 <th className="px-3 py-3 whitespace-nowrap">Куда</th>
                 <th className="px-3 py-3 text-right whitespace-nowrap">Вес (т)</th>
@@ -400,7 +392,7 @@ const Movements: React.FC = () => {
             <tbody className="divide-y divide-slate-100">
               {filteredMovements.length === 0 ? (
                 <tr>
-                  <td colSpan={15} className="px-3 py-8 text-center text-slate-400">
+                  <td colSpan={14} className="px-3 py-8 text-center text-slate-400">
                     Нет записей. Добавьте первую операцию.
                   </td>
                 </tr>
@@ -424,15 +416,6 @@ const Movements: React.FC = () => {
                     </td>
                     <td className="px-3 py-2">{item.position?.material?.name || '—'}</td>
                     <td className="px-3 py-2">{item.position?.size || '—'}</td>
-                    <td className="px-3 py-2">
-                      <span
-                        className={`badge ${
-                          item.position?.ownership === 'own' ? 'badge-blue' : 'badge-orange'
-                        }`}
-                      >
-                        {item.position?.ownership === 'own' ? 'Наш' : 'Клиента'}
-                      </span>
-                    </td>
                     <td className="px-3 py-2 text-slate-600">
                       {item.operation === 'income' 
                         ? (item.supplier?.name || '—')

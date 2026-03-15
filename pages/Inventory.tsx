@@ -71,11 +71,11 @@ const Inventory: React.FC = () => {
       >();
 
       filtered.forEach((p) => {
-        const key = `${p.material?.name || ''}|${p.size}|${p.ownership}`;
+        const key = `${p.material?.name || ''}|${p.size}|${p.company?.name || ''}`;
         if (!map.has(key)) {
           map.set(key, {
             id: key,
-            company: '—',
+            company: p.company?.name || 'Неизвестная',
             material: p.material?.name || 'Неизвестный',
             size: p.size,
             ownership: p.ownership,
@@ -124,8 +124,8 @@ const Inventory: React.FC = () => {
   const handleExport = () => {
     // Simple CSV export
     const headers = isGroupedByCompany
-      ? ['Компания', 'Материал', 'Размер', 'Владение', 'Остаток', 'Стоимость']
-      : ['Материал', 'Размер', 'Владение', 'Остаток', 'Стоимость'];
+      ? ['Компания', 'Материал', 'Размер', 'Остаток', 'Стоимость']
+      : ['Материал', 'Размер', 'Компания', 'Остаток', 'Стоимость'];
 
     const rows = inventory.map((item) =>
       isGroupedByCompany
@@ -133,14 +133,13 @@ const Inventory: React.FC = () => {
             item.company,
             item.material,
             item.size,
-            item.ownership === 'own' ? 'Наш' : 'Клиента',
             item.balance.toFixed(3),
             item.value > 0 ? item.value.toFixed(0) : '',
           ]
         : [
             item.material,
             item.size,
-            item.ownership === 'own' ? 'Наш' : 'Клиента',
+            item.company,
             item.balance.toFixed(3),
             item.value > 0 ? item.value.toFixed(0) : '',
           ]
@@ -239,13 +238,9 @@ const Inventory: React.FC = () => {
                 <div className="text-sm font-medium text-slate-800">{item.material}</div>
                 <div className="flex flex-wrap gap-2 items-center">
                   <span className="text-sm text-slate-600">Размер: {item.size}</span>
-                  <span
-                    className={`badge ${
-                      item.ownership === 'own' ? 'badge-blue' : 'badge-orange'
-                    }`}
-                  >
-                    {item.ownership === 'own' ? 'Наш' : 'Клиента'}
-                  </span>
+                  {!isGroupedByCompany && (
+                    <span className="badge badge-blue">{item.company}</span>
+                  )}
                 </div>
                 <div className="flex justify-between items-end">
                   <div
@@ -285,15 +280,17 @@ const Inventory: React.FC = () => {
             <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
               <tr>
                 {isGroupedByCompany && (
-                  <th className="px-6 py-4 whitespace-nowrap">Компания</th>
+                  <th className="px-4 py-3 whitespace-nowrap">Компания</th>
                 )}
-                <th className="px-6 py-4 whitespace-nowrap">Материал</th>
-                <th className="px-6 py-4 whitespace-nowrap">Размер</th>
-                <th className="px-6 py-4 whitespace-nowrap">Владение</th>
-                <th className="px-6 py-4 text-right font-bold bg-blue-50/50 whitespace-nowrap">
+                <th className="px-4 py-3 whitespace-nowrap">Материал</th>
+                <th className="px-4 py-3 whitespace-nowrap">Размер</th>
+                {!isGroupedByCompany && (
+                  <th className="px-4 py-3 whitespace-nowrap">Компания</th>
+                )}
+                <th className="px-4 py-3 text-right font-bold bg-blue-50/50 whitespace-nowrap">
                   Остаток (т)
                 </th>
-                <th className="px-6 py-4 text-right whitespace-nowrap">
+                <th className="px-4 py-3 text-right whitespace-nowrap">
                   Стоимость (₽)
                 </th>
               </tr>
@@ -302,8 +299,8 @@ const Inventory: React.FC = () => {
               {inventory.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={isGroupedByCompany ? 6 : 5}
-                    className="px-6 py-8 text-center text-slate-400"
+                    colSpan={5}
+                    className="px-4 py-8 text-center text-slate-400"
                   >
                     Нет данных о движениях.
                   </td>
@@ -312,27 +309,21 @@ const Inventory: React.FC = () => {
                 inventory.map((item) => (
                   <tr key={item.id} className="hover:bg-slate-50 transition-colors">
                     {isGroupedByCompany && (
-                      <td className="px-6 py-3 font-medium text-slate-700">{item.company}</td>
+                      <td className="px-4 py-3 font-medium text-slate-700">{item.company}</td>
                     )}
-                    <td className="px-6 py-3 font-medium text-slate-800">{item.material}</td>
-                    <td className="px-6 py-3">{item.size}</td>
-                    <td className="px-6 py-3">
-                      <span
-                        className={`badge ${
-                          item.ownership === 'own' ? 'badge-blue' : 'badge-orange'
-                        }`}
-                      >
-                        {item.ownership === 'own' ? 'Наш' : 'Клиента'}
-                      </span>
-                    </td>
+                    <td className="px-4 py-3 font-medium text-slate-800">{item.material}</td>
+                    <td className="px-4 py-3">{item.size}</td>
+                    {!isGroupedByCompany && (
+                      <td className="px-4 py-3 text-slate-600">{item.company}</td>
+                    )}
                     <td
-                      className={`px-6 py-3 text-right font-bold bg-blue-50/30 ${
+                      className={`px-4 py-3 text-right font-bold bg-blue-50/30 ${
                         item.balance < 0 ? 'text-red-600' : 'text-slate-800'
                       }`}
                     >
                       {item.balance.toFixed(3)}
                     </td>
-                    <td className="px-6 py-3 text-right text-slate-600">
+                    <td className="px-4 py-3 text-right text-slate-600">
                       {item.value > 0 ? item.value.toLocaleString('ru-RU', { maximumFractionDigits: 0 }) : '—'}
                     </td>
                   </tr>
@@ -342,13 +333,13 @@ const Inventory: React.FC = () => {
             <tfoot className="bg-slate-50 font-bold border-t border-slate-200">
               <tr>
                 <td
-                  colSpan={isGroupedByCompany ? 4 : 3}
-                  className="px-6 py-3 text-right"
+                  colSpan={3}
+                  className="px-4 py-3 text-right"
                 >
                   ИТОГО:
                 </td>
-                <td className="px-6 py-3 text-right">{totalBalance.toFixed(3)}</td>
-                <td className="px-6 py-3 text-right text-blue-700">
+                <td className="px-4 py-3 text-right">{totalBalance.toFixed(3)}</td>
+                <td className="px-4 py-3 text-right text-blue-700">
                   {totalValue > 0 ? totalValue.toLocaleString('ru-RU', { maximumFractionDigits: 0 }) : '—'}
                 </td>
               </tr>
