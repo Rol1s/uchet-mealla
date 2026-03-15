@@ -1,5 +1,5 @@
 import React from 'react';
-import { Megaphone, Sparkles, Package, Banknote, Edit3, Rocket, Ruler, Wallet } from 'lucide-react';
+import { Megaphone, Sparkles, Package, Banknote, Edit3, Rocket, Ruler, Wallet, Calendar, FileSpreadsheet, LayoutDashboard } from 'lucide-react';
 
 interface UpdateCardProps {
   version: string;
@@ -87,14 +87,53 @@ const Updates: React.FC = () => {
 
       <div className="space-y-4">
 
+        {/* v2.7 */}
+        <UpdateCard
+          version="v2.7"
+          date="15 марта 2026"
+          title="Фильтры по датам, связь платежей, XLSX"
+          color="purple"
+          icon={<Calendar size={20} />}
+          isLatest
+        >
+          <ChangeItem title="Универсальный фильтр по датам">
+            <ul className="list-disc list-inside space-y-0.5">
+              <li>Добавлен на страницы: Движение, Финансы, Работы, Дашборд</li>
+              <li>Быстрые кнопки: Сегодня, Неделя, Месяц, Всё</li>
+              <li>Произвольный диапазон: от — до</li>
+              <li>По умолчанию «Всё» — данные показываются как раньше</li>
+            </ul>
+          </ChangeItem>
+          <ChangeItem title="Связь платежей с движениями">
+            <ul className="list-disc list-inside space-y-0.5">
+              <li>В разделе «Финансы» можно привязать платёж к конкретной поставке/продаже</li>
+              <li>При выборе движения — автозаполнение суммы и описания</li>
+              <li>Опционально — старые записи работают без привязки</li>
+            </ul>
+          </ChangeItem>
+          <ChangeItem title="Улучшенный дашборд">
+            <ul className="list-disc list-inside space-y-0.5">
+              <li>Фильтр по периоду — статистика за выбранный диапазон</li>
+              <li>Карточка «Последние операции» — топ-5 движений</li>
+              <li>Карточка «Неоплаченные счета» — с суммой к оплате</li>
+            </ul>
+          </ChangeItem>
+          <ChangeItem title="Экспорт в XLSX (Excel)">
+            <ul className="list-disc list-inside space-y-0.5">
+              <li>Кнопка XLSX на страницах: Движение, Финансы, Работы, Остатки</li>
+              <li>Скачивается файл с форматированными данными</li>
+              <li>CSV экспорт на Остатках тоже сохранён</li>
+            </ul>
+          </ChangeItem>
+        </UpdateCard>
+
         {/* v2.6 */}
         <UpdateCard
           version="v2.6"
           date="15 марта 2026"
           title="Финансы: полный учёт денег"
-          color="purple"
+          color="green"
           icon={<Wallet size={20} />}
-          isLatest
         >
           <ChangeItem title="Раздел «Расходы» → «Финансы»">
             <ul className="list-disc list-inside space-y-0.5">

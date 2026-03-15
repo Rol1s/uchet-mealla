@@ -147,6 +147,7 @@ export interface Expense {
   payer_id: string | null;
   recipient_id: string | null;
   company_id: string | null;
+  movement_id: string | null;
   note: string | null;
   created_by: string | null;
   created_at: string;
@@ -154,6 +155,7 @@ export interface Expense {
   company?: Company;
   payer?: Company;
   recipient?: Company;
+  movement?: Movement;
 }
 
 // === Form Input Types ===
@@ -186,6 +188,7 @@ export interface ExpenseInput {
   payer_id: string | null;
   recipient_id: string | null;
   company_id: string | null;
+  movement_id: string | null;
   note: string;
 }
 

@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Movement, Position, Expense } from '../types';
 import { getMovements, getPositions, getExpenses } from '../services/supabase';
-import { Package, ArrowDownLeft, ArrowUpRight, TrendingUp, Loader2, ShoppingCart, Truck } from 'lucide-react';
+import { Package, ArrowDownLeft, ArrowUpRight, TrendingUp, Loader2, ShoppingCart, Truck, Clock, AlertCircle } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import DateFilter, { DateRange } from '../components/DateFilter';
 
 interface DashboardCache {
   movements: Movement[];
@@ -25,6 +26,7 @@ const Dashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const isFetchingRef = useRef(false);
+  const [dateRange, setDateRange] = useState<DateRange>({ dateFrom: null, dateTo: null });
 
   useEffect(() => {
     const fresh = dashboardCache && Date.now() - dashboardCache.fetchedAt < CACHE_TTL_MS;
@@ -63,31 +65,60 @@ const Dashboard: React.FC = () => {
     return () => { isMounted = false; };
   }, [retryCount]);
 
+  const filterByDate = <T extends { movement_date?: string; expense_date?: string }>(items: T[]): T[] => {
+    if (!dateRange.dateFrom && !dateRange.dateTo) return items;
+    return items.filter(item => {
+      const itemDate = item.movement_date || item.expense_date || '';
+      if (dateRange.dateFrom && itemDate < dateRange.dateFrom) return false;
+      if (dateRange.dateTo && itemDate > dateRange.dateTo) return false;
+      return true;
+    });
+  };
+
+  const filteredMovements = useMemo(() => filterByDate(movements), [movements, dateRange]);
+  const filteredExpenses = useMemo(() => filterByDate(expenses), [expenses, dateRange]);
+
   const stats = useMemo(() => {
-    const totalIncome = movements
+    const totalIncome = filteredMovements
       .filter((m) => m.operation === 'income')
       .reduce((acc, curr) => acc + curr.weight, 0);
 
-    const totalExpense = movements
+    const totalExpense = filteredMovements
       .filter((m) => m.operation === 'expense')
       .reduce((acc, curr) => acc + curr.weight, 0);
 
     const currentStock = positions.reduce((acc, p) => acc + p.balance, 0);
 
-    const totalPurchasesValue = movements
+    const totalPurchasesValue = filteredMovements
       .filter((m) => m.operation === 'income')
       .reduce((acc, m) => acc + (m.total_value || 0), 0);
 
-    const totalSalesValue = movements
+    const totalSalesValue = filteredMovements
       .filter((m) => m.operation === 'expense')
       .reduce((acc, m) => acc + (m.total_value || 0), 0);
 
-    const totalExpensesValue = expenses.reduce((acc, e) => acc + e.amount, 0);
+    const totalExpensesValue = filteredExpenses
+      .filter(e => e.operation_type === 'expense' || !e.operation_type)
+      .reduce((acc, e) => acc + e.amount, 0);
+    
+    const totalIncomeValue = filteredExpenses
+      .filter(e => e.operation_type === 'income')
+      .reduce((acc, e) => acc + e.amount, 0);
 
-    const profit = totalSalesValue - totalPurchasesValue - totalExpensesValue;
+    const profit = totalSalesValue - totalPurchasesValue - totalExpensesValue + totalIncomeValue;
 
-    return { totalIncome, totalExpense, currentStock, totalPurchasesValue, totalSalesValue, totalExpensesValue, profit };
-  }, [movements, expenses, positions]);
+    return { totalIncome, totalExpense, currentStock, totalPurchasesValue, totalSalesValue, totalExpensesValue, totalIncomeValue, profit };
+  }, [filteredMovements, filteredExpenses, positions]);
+  
+  const recentMovements = useMemo(() => {
+    return [...movements]
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, 5);
+  }, [movements]);
+  
+  const unpaidExpenses = useMemo(() => {
+    return expenses.filter(e => e.payment_status === 'unpaid');
+  }, [expenses]);
 
   // Data for chart - group by material
   const materialDistribution = useMemo(() => {
@@ -135,6 +166,11 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="space-y-4 sm:space-y-6">
+      {/* Date filter */}
+      <div className="bg-white p-3 rounded-xl shadow-sm border border-slate-200">
+        <DateFilter value={dateRange} onChange={setDateRange} />
+      </div>
+
       {/* Weight stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
         <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4">
@@ -249,6 +285,90 @@ const Dashboard: React.FC = () => {
           ) : (
             <div className="h-64 flex items-center justify-center text-slate-400">
               Нет данных для отображения
+            </div>
+          )}
+        </div>
+
+        {/* Recent movements card */}
+        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-100">
+          <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
+            <Clock size={20} className="text-blue-600" />
+            Последние операции
+          </h3>
+          {recentMovements.length > 0 ? (
+            <div className="space-y-2">
+              {recentMovements.map(m => (
+                <div key={m.id} className="flex items-center justify-between py-2 border-b border-slate-100 last:border-b-0">
+                  <div className="flex items-center gap-2">
+                    <span className={`w-2 h-2 rounded-full ${m.operation === 'income' ? 'bg-green-500' : 'bg-red-500'}`} />
+                    <span className="text-sm text-slate-600">
+                      {m.position?.material?.name || '—'}
+                    </span>
+                    <span className="text-xs text-slate-400">
+                      {new Date(m.movement_date).toLocaleDateString('ru-RU')}
+                    </span>
+                  </div>
+                  <div className="text-sm font-medium text-slate-700">
+                    {m.operation === 'income' ? '+' : '-'}{m.weight} т
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center text-slate-400 py-4">
+              Нет операций
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Unpaid expenses & Info */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        {/* Unpaid expenses card */}
+        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-slate-100">
+          <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
+            <AlertCircle size={20} className="text-amber-600" />
+            Неоплаченные счета
+            {unpaidExpenses.length > 0 && (
+              <span className="ml-auto px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-medium">
+                {unpaidExpenses.length}
+              </span>
+            )}
+          </h3>
+          {unpaidExpenses.length > 0 ? (
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {unpaidExpenses.slice(0, 10).map(e => (
+                <div key={e.id} className="flex items-center justify-between py-2 border-b border-slate-100 last:border-b-0">
+                  <div>
+                    <div className="text-sm text-slate-600 truncate max-w-[200px]">
+                      {e.description || 'Без описания'}
+                    </div>
+                    <div className="text-xs text-slate-400">
+                      {new Date(e.expense_date).toLocaleDateString('ru-RU')}
+                    </div>
+                  </div>
+                  <div className="text-sm font-medium text-amber-700">
+                    {e.amount.toLocaleString('ru-RU')} ₽
+                  </div>
+                </div>
+              ))}
+              {unpaidExpenses.length > 10 && (
+                <div className="text-center text-slate-400 text-sm pt-2">
+                  +{unpaidExpenses.length - 10} ещё
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center text-green-600 py-4">
+              Все счета оплачены
+            </div>
+          )}
+          {unpaidExpenses.length > 0 && (
+            <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center">
+              <span className="text-sm text-slate-500">Итого к оплате:</span>
+              <span className="text-lg font-bold text-amber-700">
+                {unpaidExpenses.reduce((acc, e) => acc + e.amount, 0).toLocaleString('ru-RU')} ₽
+              </span>
             </div>
           )}
         </div>

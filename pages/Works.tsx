@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { WorkLog, ServiceRate, Company, Material, WorkLogInput } from '../types';
 import { getWorkLogs, createWorkLog, deleteWorkLog, getServiceRates, getCompanies, getMaterials } from '../services/supabase';
 import { useAuth } from '../context/AuthContext';
-import { Plus, Trash2, Loader2, Hammer } from 'lucide-react';
+import { Plus, Trash2, Loader2, Hammer, Search, Filter, FileSpreadsheet } from 'lucide-react';
+import DateFilter, { DateRange } from '../components/DateFilter';
+import { exportToXlsx, formatDate, formatNumber, formatCurrency } from '../utils/export';
 
 const Works: React.FC = () => {
   const { isAdmin, user } = useAuth();
@@ -14,6 +16,8 @@ const Works: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [dateRange, setDateRange] = useState<DateRange>({ dateFrom: null, dateTo: null });
 
   const [formState, setFormState] = useState<WorkLogInput>({
     work_date: new Date().toISOString().split('T')[0],
@@ -89,7 +93,39 @@ const Works: React.FC = () => {
     }
   };
 
-  const totalSum = logs.reduce((acc, l) => acc + l.total_price, 0);
+  const filteredLogs = logs.filter((log) => {
+    const matchesSearch = !searchTerm ||
+      log.company?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      log.material?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      log.service?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (log.note || '').toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesDateRange = (() => {
+      if (!dateRange.dateFrom && !dateRange.dateTo) return true;
+      const workDate = log.work_date;
+      if (dateRange.dateFrom && workDate < dateRange.dateFrom) return false;
+      if (dateRange.dateTo && workDate > dateRange.dateTo) return false;
+      return true;
+    })();
+    
+    return matchesSearch && matchesDateRange;
+  });
+
+  const totalSum = filteredLogs.reduce((acc, l) => acc + l.total_price, 0);
+
+  const handleExportXlsx = () => {
+    exportToXlsx<WorkLog>(filteredLogs, [
+      { header: 'Дата', accessor: (l: WorkLog) => formatDate(l.work_date), width: 12 },
+      { header: 'Компания', accessor: (l: WorkLog) => l.company?.name || '', width: 20 },
+      { header: 'Материал', accessor: (l: WorkLog) => l.material?.name || '', width: 18 },
+      { header: 'Услуга', accessor: (l: WorkLog) => l.service?.name || '', width: 20 },
+      { header: 'Кол-во', accessor: (l: WorkLog) => formatNumber(l.quantity, 2), width: 10 },
+      { header: 'Ед.', accessor: (l: WorkLog) => l.service?.unit || '', width: 8 },
+      { header: 'Цена/ед', accessor: (l: WorkLog) => formatCurrency(l.service?.price || 0), width: 12 },
+      { header: 'Сумма', accessor: (l: WorkLog) => formatCurrency(l.total_price), width: 12 },
+      { header: 'Примечание', accessor: (l: WorkLog) => l.note || '', width: 25 },
+    ], `Работы_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
 
   if (loading) {
     return (
@@ -109,14 +145,25 @@ const Works: React.FC = () => {
           </h2>
           <p className="text-slate-500 text-sm">Выполненные услуги и их стоимость</p>
         </div>
-        <button
-          type="button"
-          onClick={() => setIsModalOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 sm:py-2 rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all min-h-[48px] sm:min-h-0 touch-manipulation"
-        >
-          <Plus size={20} />
-          Добавить работу
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={handleExportXlsx}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-3 sm:py-2 rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all min-h-[48px] sm:min-h-0 touch-manipulation"
+            title="Экспорт в Excel"
+          >
+            <FileSpreadsheet size={20} />
+            <span className="hidden sm:inline">XLSX</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsModalOpen(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 sm:py-2 rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all min-h-[48px] sm:min-h-0 touch-manipulation"
+          >
+            <Plus size={20} />
+            Добавить работу
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -125,15 +172,36 @@ const Works: React.FC = () => {
         </div>
       )}
 
+      {/* Filters */}
+      <div className="bg-white p-3 rounded-xl shadow-sm border border-slate-200 space-y-3">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+          <div className="relative flex-1 min-w-0">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <input
+              type="text"
+              placeholder="Поиск по компании, материалу, услуге..."
+              className="w-full pl-10 pr-4 py-3 sm:py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center text-slate-500 text-sm gap-2 sm:px-3 sm:border-l border-slate-200">
+            <Filter size={16} />
+            <span>Записей: {filteredLogs.length}</span>
+          </div>
+        </div>
+        <DateFilter value={dateRange} onChange={setDateRange} />
+      </div>
+
       {/* Mobile cards */}
       <div className="md:hidden space-y-3">
-        {logs.length === 0 ? (
+        {filteredLogs.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 text-center text-slate-400">
             Нет записей о работах.
           </div>
         ) : (
           <>
-            {logs.map((log) => (
+            {filteredLogs.map((log) => (
               <div
                 key={log.id}
                 className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 space-y-2"
@@ -197,14 +265,14 @@ const Works: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {logs.length === 0 ? (
+              {filteredLogs.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="px-6 py-8 text-center text-slate-400">
                     Нет записей о работах.
                   </td>
                 </tr>
               ) : (
-                logs.map((log) => (
+                filteredLogs.map((log) => (
                   <tr key={log.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-3">
                       {new Date(log.work_date).toLocaleDateString('ru-RU')}

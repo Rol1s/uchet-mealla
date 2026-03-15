@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Expense, ExpenseInput, ExpenseCategory, Company, FinanceOperationType, PaymentMethodType } from '../types';
-import { getExpenses, createExpense, updateExpense, deleteExpense, getCompanies, createCompany } from '../services/supabase';
+import { Expense, ExpenseInput, ExpenseCategory, Company, FinanceOperationType, PaymentMethodType, Movement } from '../types';
+import { getExpenses, createExpense, updateExpense, deleteExpense, getCompanies, createCompany, getMovements } from '../services/supabase';
 import { useAuth } from '../context/AuthContext';
-import { Plus, Trash2, Loader2, Wallet, Search, Filter, Edit2, ChevronDown, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
+import { Plus, Trash2, Loader2, Wallet, Search, Filter, Edit2, ChevronDown, ArrowDownCircle, ArrowUpCircle, Link, FileSpreadsheet } from 'lucide-react';
+import DateFilter, { DateRange } from '../components/DateFilter';
+import { exportToXlsx, formatDate, formatCurrency } from '../utils/export';
 
 const CATEGORY_LABELS: Record<ExpenseCategory, string> = {
   transport: 'Логистика',
@@ -24,6 +26,7 @@ const Finance: React.FC = () => {
   const { isAdmin, user } = useAuth();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
+  const [movements, setMovements] = useState<Movement[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,6 +39,7 @@ const Finance: React.FC = () => {
   const [filterOperationType, setFilterOperationType] = useState<FinanceOperationType | ''>('');
   const [filterPaymentMethod, setFilterPaymentMethod] = useState<PaymentMethodType | ''>('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [dateRange, setDateRange] = useState<DateRange>({ dateFrom: null, dateTo: null });
 
   // Combobox states
   const [payerInput, setPayerInput] = useState('');
@@ -58,6 +62,7 @@ const Finance: React.FC = () => {
     payer_id: null,
     recipient_id: null,
     company_id: null,
+    movement_id: null,
     note: '',
   }), []);
 
@@ -68,13 +73,15 @@ const Finance: React.FC = () => {
     const loadData = async () => {
       try {
         setLoading(true);
-        const [expensesData, companiesData] = await Promise.all([
+        const [expensesData, companiesData, movementsData] = await Promise.all([
           getExpenses(),
           getCompanies(),
+          getMovements(),
         ]);
         if (isMounted) {
           setExpenses(expensesData);
           setCompanies(companiesData);
+          setMovements(movementsData);
           setError(null);
         }
       } catch (err) {
@@ -148,6 +155,7 @@ const Finance: React.FC = () => {
       payer_id: exp.payer_id ?? null,
       recipient_id: exp.recipient_id ?? null,
       company_id: exp.company_id ?? null,
+      movement_id: exp.movement_id ?? null,
       note: exp.note ?? '',
     });
     setPayerInput(exp.payer?.name || '');
@@ -256,11 +264,35 @@ const Finance: React.FC = () => {
       e.payer?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       e.recipient?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (e.note || '').toLowerCase().includes(searchTerm.toLowerCase());
-    return matchCategory && matchOperationType && matchPaymentMethod && matchSearch;
+    
+    const matchDateRange = (() => {
+      if (!dateRange.dateFrom && !dateRange.dateTo) return true;
+      const expenseDate = e.expense_date;
+      if (dateRange.dateFrom && expenseDate < dateRange.dateFrom) return false;
+      if (dateRange.dateTo && expenseDate > dateRange.dateTo) return false;
+      return true;
+    })();
+    
+    return matchCategory && matchOperationType && matchPaymentMethod && matchSearch && matchDateRange;
   });
 
   const totalIncome = filtered.filter(e => e.operation_type === 'income').reduce((acc, e) => acc + e.amount, 0);
   const totalExpense = filtered.filter(e => e.operation_type === 'expense' || !e.operation_type).reduce((acc, e) => acc + e.amount, 0);
+
+  const handleExportXlsx = () => {
+    exportToXlsx<Expense>(filtered, [
+      { header: 'Дата', accessor: (e: Expense) => formatDate(e.expense_date), width: 12 },
+      { header: 'Тип', accessor: (e: Expense) => e.operation_type === 'income' ? 'Приход' : 'Расход', width: 10 },
+      { header: 'Категория', accessor: (e: Expense) => CATEGORY_LABELS[e.category], width: 18 },
+      { header: 'Описание', accessor: (e: Expense) => e.description, width: 30 },
+      { header: 'Сумма', accessor: (e: Expense) => formatCurrency(e.amount), width: 12 },
+      { header: 'Оплата', accessor: (e: Expense) => e.payment_method === 'cash' ? 'Нал' : 'Безнал', width: 10 },
+      { header: 'Статус', accessor: (e: Expense) => e.payment_status === 'paid' ? 'Оплачено' : 'Не оплачено', width: 12 },
+      { header: 'Плательщик', accessor: (e: Expense) => e.payer?.name || '', width: 20 },
+      { header: 'Получатель', accessor: (e: Expense) => e.recipient?.name || '', width: 20 },
+      { header: 'Примечание', accessor: (e: Expense) => e.note || '', width: 25 },
+    ], `Финансы_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
 
   if (loading) {
     return (
@@ -280,14 +312,25 @@ const Finance: React.FC = () => {
           </h2>
           <p className="text-slate-500 text-sm">Приходы и расходы денежных средств</p>
         </div>
-        <button
-          type="button"
-          onClick={openCreate}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 sm:py-2 rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all min-h-[48px] sm:min-h-0 touch-manipulation"
-        >
-          <Plus size={20} />
-          Добавить запись
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={handleExportXlsx}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-3 sm:py-2 rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all min-h-[48px] sm:min-h-0 touch-manipulation"
+            title="Экспорт в Excel"
+          >
+            <FileSpreadsheet size={20} />
+            <span className="hidden sm:inline">XLSX</span>
+          </button>
+          <button
+            type="button"
+            onClick={openCreate}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 sm:py-2 rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all min-h-[48px] sm:min-h-0 touch-manipulation"
+          >
+            <Plus size={20} />
+            Добавить запись
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -309,49 +352,52 @@ const Finance: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <div className="bg-white p-3 rounded-xl shadow-sm border border-slate-200 flex flex-col sm:flex-row gap-2 sm:gap-3 flex-wrap">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-          <input
-            type="text"
-            placeholder="Поиск..."
-            className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+      <div className="bg-white p-3 rounded-xl shadow-sm border border-slate-200 space-y-3">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 flex-wrap">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <input
+              type="text"
+              placeholder="Поиск..."
+              className="w-full pl-10 pr-4 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <select
+            className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-600"
+            value={filterOperationType}
+            onChange={(e) => setFilterOperationType(e.target.value as FinanceOperationType | '')}
+          >
+            <option value="">Все операции</option>
+            <option value="income">Приход</option>
+            <option value="expense">Расход</option>
+          </select>
+          <select
+            className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-600"
+            value={filterPaymentMethod}
+            onChange={(e) => setFilterPaymentMethod(e.target.value as PaymentMethodType | '')}
+          >
+            <option value="">Нал + Безнал</option>
+            <option value="cash">Только нал</option>
+            <option value="cashless">Только безнал</option>
+          </select>
+          <select
+            className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-600"
+            value={filterCategory}
+            onChange={(e) => setFilterCategory(e.target.value as ExpenseCategory | '')}
+          >
+            <option value="">Все категории</option>
+            {(Object.keys(CATEGORY_LABELS) as ExpenseCategory[]).map((cat) => (
+              <option key={cat} value={cat}>{CATEGORY_LABELS[cat]}</option>
+            ))}
+          </select>
+          <div className="flex items-center text-slate-500 text-sm gap-2 sm:px-2">
+            <Filter size={16} />
+            <span>{filtered.length}</span>
+          </div>
         </div>
-        <select
-          className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-600"
-          value={filterOperationType}
-          onChange={(e) => setFilterOperationType(e.target.value as FinanceOperationType | '')}
-        >
-          <option value="">Все операции</option>
-          <option value="income">Приход</option>
-          <option value="expense">Расход</option>
-        </select>
-        <select
-          className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-600"
-          value={filterPaymentMethod}
-          onChange={(e) => setFilterPaymentMethod(e.target.value as PaymentMethodType | '')}
-        >
-          <option value="">Нал + Безнал</option>
-          <option value="cash">Только нал</option>
-          <option value="cashless">Только безнал</option>
-        </select>
-        <select
-          className="px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-600"
-          value={filterCategory}
-          onChange={(e) => setFilterCategory(e.target.value as ExpenseCategory | '')}
-        >
-          <option value="">Все категории</option>
-          {(Object.keys(CATEGORY_LABELS) as ExpenseCategory[]).map((cat) => (
-            <option key={cat} value={cat}>{CATEGORY_LABELS[cat]}</option>
-          ))}
-        </select>
-        <div className="flex items-center text-slate-500 text-sm gap-2 sm:px-2">
-          <Filter size={16} />
-          <span>{filtered.length}</span>
-        </div>
+        <DateFilter value={dateRange} onChange={setDateRange} />
       </div>
 
       {/* Mobile cards */}
@@ -747,6 +793,41 @@ const Finance: React.FC = () => {
                     </div>
                   )}
                 </div>
+              </div>
+
+              {/* Link to Movement */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  <Link size={14} className="inline mr-1" />
+                  Связать с движением (опционально)
+                </label>
+                <select
+                  className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
+                  value={formState.movement_id || ''}
+                  onChange={(e) => {
+                    const movementId = e.target.value || null;
+                    setFormState({ ...formState, movement_id: movementId });
+                    setFormDirty(true);
+                    if (movementId) {
+                      const movement = movements.find(m => m.id === movementId);
+                      if (movement && !formState.description) {
+                        setFormState(prev => ({
+                          ...prev,
+                          movement_id: movementId,
+                          description: `${movement.operation === 'income' ? 'Приход' : 'Расход'}: ${movement.position?.material?.name || '—'} ${movement.weight}т`,
+                          amount: movement.total_value || 0,
+                        }));
+                      }
+                    }
+                  }}
+                >
+                  <option value="">— Без привязки —</option>
+                  {movements.map(m => (
+                    <option key={m.id} value={m.id}>
+                      {new Date(m.movement_date).toLocaleDateString('ru-RU')} · {m.operation === 'income' ? 'Приход' : 'Расход'} · {m.position?.material?.name || '—'} · {m.weight}т · {(m.total_value || 0).toLocaleString('ru-RU')} ₽
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Note */}

@@ -2,7 +2,9 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Movement, Company, Material, MovementInput, OwnershipType, OperationType, PaymentMethodType } from '../types';
 import { getMovements, createMovement, updateMovement, deleteMovement, getCompanies, getMaterials, createCompany } from '../services/supabase';
 import { useAuth } from '../context/AuthContext';
-import { Plus, Trash2, Search, Filter, Loader2, Edit2, ChevronDown } from 'lucide-react';
+import { Plus, Trash2, Search, Filter, Loader2, Edit2, ChevronDown, FileSpreadsheet } from 'lucide-react';
+import DateFilter, { DateRange } from '../components/DateFilter';
+import { exportToXlsx, formatDate, formatNumber, formatCurrency } from '../utils/export';
 
 const LOADING_COST_PER_TON = 1000;
 
@@ -15,6 +17,7 @@ const Movements: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [dateRange, setDateRange] = useState<DateRange>({ dateFrom: null, dateTo: null });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -300,7 +303,7 @@ const Movements: React.FC = () => {
   const handleCreateSupplier = async () => {
     if (!supplierInput.trim()) return;
     try {
-      const newCompany = await createCompany({ name: supplierInput.trim(), type: 'supplier' });
+      const newCompany = await createCompany({ name: supplierInput.trim(), type: 'supplier', active: true });
       setCompanies(prev => [...prev, newCompany]);
       setFormState(prev => ({ ...prev, supplier_id: newCompany.id }));
       setShowSupplierDropdown(false);
@@ -313,7 +316,7 @@ const Movements: React.FC = () => {
   const handleCreateBuyer = async () => {
     if (!buyerInput.trim()) return;
     try {
-      const newCompany = await createCompany({ name: buyerInput.trim(), type: 'buyer' });
+      const newCompany = await createCompany({ name: buyerInput.trim(), type: 'buyer', active: true });
       setCompanies(prev => [...prev, newCompany]);
       setFormState(prev => ({ ...prev, buyer_id: newCompany.id }));
       setShowBuyerDropdown(false);
@@ -331,7 +334,8 @@ const Movements: React.FC = () => {
     const buyerName = m.buyer?.name || '';
     const destination = m.destination || '';
     const term = searchTerm.toLowerCase();
-    return (
+    
+    const matchesSearch = (
       companyName.toLowerCase().includes(term) ||
       materialName.toLowerCase().includes(term) ||
       size.toLowerCase().includes(term) ||
@@ -339,7 +343,35 @@ const Movements: React.FC = () => {
       buyerName.toLowerCase().includes(term) ||
       destination.toLowerCase().includes(term)
     );
+    
+    const matchesDateRange = (() => {
+      if (!dateRange.dateFrom && !dateRange.dateTo) return true;
+      const movementDate = m.movement_date;
+      if (dateRange.dateFrom && movementDate < dateRange.dateFrom) return false;
+      if (dateRange.dateTo && movementDate > dateRange.dateTo) return false;
+      return true;
+    })();
+    
+    return matchesSearch && matchesDateRange;
   });
+
+  const handleExportXlsx = () => {
+    exportToXlsx<Movement>(filteredMovements, [
+      { header: 'Дата', accessor: (m: Movement) => formatDate(m.movement_date), width: 12 },
+      { header: 'Операция', accessor: (m: Movement) => m.operation === 'income' ? 'Приход' : 'Расход', width: 10 },
+      { header: 'Компания', accessor: (m: Movement) => m.position?.company?.name || '', width: 20 },
+      { header: 'Материал', accessor: (m: Movement) => m.position?.material?.name || '', width: 20 },
+      { header: 'Размер', accessor: (m: Movement) => m.position?.size || '', width: 12 },
+      { header: 'Вес (т)', accessor: (m: Movement) => formatNumber(m.weight, 3), width: 10 },
+      { header: 'Метры', accessor: (m: Movement) => formatNumber(m.linear_meters || 0, 2), width: 10 },
+      { header: 'Цена/т', accessor: (m: Movement) => formatCurrency(m.price_per_ton), width: 12 },
+      { header: 'Сумма', accessor: (m: Movement) => formatCurrency(m.total_value), width: 12 },
+      { header: 'Погр./разгр.', accessor: (m: Movement) => formatCurrency(m.cost), width: 12 },
+      { header: 'Поставщик', accessor: (m: Movement) => m.supplier?.name || '', width: 18 },
+      { header: 'Покупатель', accessor: (m: Movement) => m.buyer?.name || '', width: 18 },
+      { header: 'Примечание', accessor: (m: Movement) => m.note || '', width: 25 },
+    ], `Движение_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
 
   if (loading) {
     return (
@@ -356,14 +388,25 @@ const Movements: React.FC = () => {
           <h2 className="text-2xl font-bold text-slate-800">Движение металла</h2>
           <p className="text-slate-500 text-sm">Приход и расход материалов со склада</p>
         </div>
-        <button
-          type="button"
-          onClick={openCreate}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 sm:py-2 rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all min-h-[48px] sm:min-h-0 touch-manipulation"
-        >
-          <Plus size={20} />
-          Добавить запись
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={handleExportXlsx}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-3 sm:py-2 rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all min-h-[48px] sm:min-h-0 touch-manipulation"
+            title="Экспорт в Excel"
+          >
+            <FileSpreadsheet size={20} />
+            <span className="hidden sm:inline">XLSX</span>
+          </button>
+          <button
+            type="button"
+            onClick={openCreate}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 sm:py-2 rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all min-h-[48px] sm:min-h-0 touch-manipulation"
+          >
+            <Plus size={20} />
+            Добавить запись
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -372,21 +415,24 @@ const Movements: React.FC = () => {
         </div>
       )}
 
-      <div className="bg-white p-3 rounded-xl shadow-sm border border-slate-200 flex flex-col sm:flex-row gap-3 sm:gap-4">
-        <div className="relative flex-1 min-w-0">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-          <input
-            type="text"
-            placeholder="Поиск по компании, материалу, поставщику..."
-            className="w-full pl-10 pr-4 py-3 sm:py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+      <div className="bg-white p-3 rounded-xl shadow-sm border border-slate-200 space-y-3">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+          <div className="relative flex-1 min-w-0">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <input
+              type="text"
+              placeholder="Поиск по компании, материалу, поставщику..."
+              className="w-full pl-10 pr-4 py-3 sm:py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-base sm:text-sm"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center text-slate-500 text-sm gap-2 sm:px-3 sm:border-l border-slate-200">
+            <Filter size={16} />
+            <span>Всего записей: {filteredMovements.length}</span>
+          </div>
         </div>
-        <div className="flex items-center text-slate-500 text-sm gap-2 sm:px-3 sm:border-l border-slate-200">
-          <Filter size={16} />
-          <span>Всего записей: {filteredMovements.length}</span>
-        </div>
+        <DateFilter value={dateRange} onChange={setDateRange} />
       </div>
 
       {/* Mobile cards */}

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Position, Movement, OwnershipType } from '../types';
 import { getPositions, getMovements } from '../services/supabase';
-import { Download, Layers, Users, Loader2, Package } from 'lucide-react';
+import { Download, Layers, Users, Loader2, Package, FileSpreadsheet } from 'lucide-react';
+import { exportToXlsx, formatNumber } from '../utils/export';
 
 const Inventory: React.FC = () => {
   const [positions, setPositions] = useState<Position[]>([]);
@@ -187,6 +188,29 @@ const Inventory: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
+  const handleExportXlsx = () => {
+    const columns = isGroupedByCompany
+      ? [
+          { header: 'Компания', accessor: (i: typeof inventory[0]) => i.company, width: 20 },
+          { header: 'Материал', accessor: (i: typeof inventory[0]) => i.material, width: 18 },
+          { header: 'Размер', accessor: (i: typeof inventory[0]) => i.size, width: 12 },
+          { header: 'Приход (т)', accessor: (i: typeof inventory[0]) => formatNumber(i.income, 3), width: 12 },
+          { header: 'Расход (т)', accessor: (i: typeof inventory[0]) => formatNumber(i.expense, 3), width: 12 },
+          { header: 'Остаток (т)', accessor: (i: typeof inventory[0]) => formatNumber(i.balance, 3), width: 12 },
+          { header: 'Стоимость', accessor: (i: typeof inventory[0]) => i.value > 0 ? formatNumber(i.value, 0) : '', width: 12 },
+        ]
+      : [
+          { header: 'Материал', accessor: (i: typeof inventory[0]) => i.material, width: 18 },
+          { header: 'Размер', accessor: (i: typeof inventory[0]) => i.size, width: 12 },
+          { header: 'Компания', accessor: (i: typeof inventory[0]) => i.company, width: 20 },
+          { header: 'Приход (т)', accessor: (i: typeof inventory[0]) => formatNumber(i.income, 3), width: 12 },
+          { header: 'Расход (т)', accessor: (i: typeof inventory[0]) => formatNumber(i.expense, 3), width: 12 },
+          { header: 'Остаток (т)', accessor: (i: typeof inventory[0]) => formatNumber(i.balance, 3), width: 12 },
+          { header: 'Стоимость', accessor: (i: typeof inventory[0]) => i.value > 0 ? formatNumber(i.value, 0) : '', width: 12 },
+        ];
+    exportToXlsx(inventory, columns, `Остатки_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -245,7 +269,14 @@ const Inventory: React.FC = () => {
             className="text-slate-600 hover:text-blue-600 flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-lg border border-slate-200 bg-white shadow-sm transition-colors"
           >
             <Download size={16} />
-            Экспорт CSV
+            CSV
+          </button>
+          <button
+            onClick={handleExportXlsx}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-lg shadow-sm transition-colors"
+          >
+            <FileSpreadsheet size={16} />
+            XLSX
           </button>
         </div>
       </div>

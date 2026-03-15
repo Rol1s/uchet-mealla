@@ -441,6 +441,7 @@ export async function createExpense(input: ExpenseInput): Promise<Expense> {
       payer_id: input.payer_id || null,
       recipient_id: input.recipient_id || null,
       company_id: input.company_id || null,
+      movement_id: input.movement_id || null,
       note: input.note || null,
       created_by: createdBy,
     })
