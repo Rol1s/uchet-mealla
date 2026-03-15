@@ -181,8 +181,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </span>
           </div>
         </header>
-        <div className="flex-1 overflow-y-auto p-4 lg:p-8 bg-slate-50 pb-24 md:pb-6 lg:pb-10">
-          <div className="max-w-7xl mx-auto">
+        <div className="flex-1 overflow-y-auto p-4 lg:p-8 bg-slate-50 pb-24 md:pb-6 lg:pb-10 min-h-0">
+          <div className="max-w-7xl mx-auto min-h-[60vh]">
             {updateBannerVisible && (
               <div className="mb-4 flex items-start gap-3 rounded-xl bg-blue-50 border border-blue-200 p-4 text-sm">
                 <Megaphone className="text-blue-600 flex-shrink-0 mt-0.5" size={20} />

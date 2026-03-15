@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import AuthGuard from './components/AuthGuard';
 import Layout from './components/Layout';
@@ -24,154 +24,54 @@ const PageFallback: React.FC = () => (
   </div>
 );
 
-const App: React.FC = () => {
-  return (
-    <AuthProvider>
-      <HashRouter>
-        <Routes>
-          {/* Public route - Login */}
-          <Route path="/login" element={<Login />} />
+/** Обёртка для всех защищённых роутов — один AuthGuard + Layout */
+const ProtectedLayout: React.FC = () => (
+  <AuthGuard>
+    <Layout>
+      <Suspense fallback={<PageFallback />}>
+        <Outlet />
+      </Suspense>
+    </Layout>
+  </AuthGuard>
+);
 
-          {/* Protected routes */}
-          <Route
-            path="/"
-            element={
-              <AuthGuard>
-                <Layout>
-                  <Suspense fallback={<PageFallback />}>
-                    <Dashboard />
-                  </Suspense>
-                </Layout>
-              </AuthGuard>
-            }
-          />
-          <Route
-            path="/movements"
-            element={
-              <AuthGuard>
-                <Layout>
-                  <Suspense fallback={<PageFallback />}>
-                    <Movements />
-                  </Suspense>
-                </Layout>
-              </AuthGuard>
-            }
-          />
-          <Route
-            path="/inventory"
-            element={
-              <AuthGuard>
-                <Layout>
-                  <Suspense fallback={<PageFallback />}>
-                    <Inventory />
-                  </Suspense>
-                </Layout>
-              </AuthGuard>
-            }
-          />
-          <Route
-            path="/rates"
-            element={
-              <AuthGuard>
-                <Layout>
-                  <Suspense fallback={<PageFallback />}>
-                    <Rates />
-                  </Suspense>
-                </Layout>
-              </AuthGuard>
-            }
-          />
-          <Route
-            path="/works"
-            element={
-              <AuthGuard>
-                <Layout>
-                  <Suspense fallback={<PageFallback />}>
-                    <Works />
-                  </Suspense>
-                </Layout>
-              </AuthGuard>
-            }
-          />
-          <Route
-            path="/expenses"
-            element={
-              <AuthGuard>
-                <Layout>
-                  <Suspense fallback={<PageFallback />}>
-                    <Expenses />
-                  </Suspense>
-                </Layout>
-              </AuthGuard>
-            }
-          />
-          <Route
-            path="/money"
-            element={
-              <AuthGuard>
-                <Layout>
-                  <Suspense fallback={<PageFallback />}>
-                    <Money />
-                  </Suspense>
-                </Layout>
-              </AuthGuard>
-            }
-          />
-          <Route
-            path="/companies"
-            element={
-              <AuthGuard>
-                <Layout>
-                  <Suspense fallback={<PageFallback />}>
-                    <Companies />
-                  </Suspense>
-                </Layout>
-              </AuthGuard>
-            }
-          />
-          <Route
-            path="/materials"
-            element={
-              <AuthGuard>
-                <Layout>
-                  <Suspense fallback={<PageFallback />}>
-                    <Materials />
-                  </Suspense>
-                </Layout>
-              </AuthGuard>
-            }
-          />
-          <Route
-            path="/history"
-            element={
-              <AuthGuard requireAdmin>
-                <Layout>
-                  <Suspense fallback={<PageFallback />}>
-                    <History />
-                  </Suspense>
-                </Layout>
-              </AuthGuard>
-            }
-          />
-          <Route
-            path="/help"
-            element={
-              <AuthGuard>
-                <Layout>
-                  <Suspense fallback={<PageFallback />}>
-                    <Help />
-                  </Suspense>
-                </Layout>
-              </AuthGuard>
-            }
-          />
+const AdminLayout: React.FC = () => (
+  <AuthGuard requireAdmin>
+    <Layout>
+      <Suspense fallback={<PageFallback />}>
+        <Outlet />
+      </Suspense>
+    </Layout>
+  </AuthGuard>
+);
 
-          {/* Catch all - redirect to home */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </HashRouter>
-    </AuthProvider>
-  );
-};
+const App: React.FC = () => (
+  <AuthProvider>
+    <HashRouter>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+
+        <Route element={<ProtectedLayout />}>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/movements" element={<Movements />} />
+          <Route path="/inventory" element={<Inventory />} />
+          <Route path="/rates" element={<Rates />} />
+          <Route path="/works" element={<Works />} />
+          <Route path="/expenses" element={<Expenses />} />
+          <Route path="/money" element={<Money />} />
+          <Route path="/companies" element={<Companies />} />
+          <Route path="/materials" element={<Materials />} />
+          <Route path="/help" element={<Help />} />
+        </Route>
+
+        <Route element={<AdminLayout />}>
+          <Route path="/history" element={<History />} />
+        </Route>
+
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </HashRouter>
+  </AuthProvider>
+);
 
 export default App;

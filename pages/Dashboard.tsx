@@ -1,33 +1,50 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Movement, WorkLog, Position, Expense } from '../types';
-import { getMovements, getWorkLogs, getPositions, getExpenses } from '../services/supabase';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { Movement, Position, Expense } from '../types';
+import { getMovements, getPositions, getExpenses } from '../services/supabase';
 import { Package, ArrowDownLeft, ArrowUpRight, TrendingUp, Loader2, ShoppingCart, Truck } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
+interface DashboardCache {
+  movements: Movement[];
+  positions: Position[];
+  expenses: Expense[];
+  fetchedAt: number;
+}
+
+/** Модульный кэш — живёт пока жива вкладка, сбрасывается через 60 сек */
+const CACHE_TTL_MS = 60_000;
+let dashboardCache: DashboardCache | null = null;
+
 const Dashboard: React.FC = () => {
-  const [movements, setMovements] = useState<Movement[]>([]);
-  const [workLogs, setWorkLogs] = useState<WorkLog[]>([]);
-  const [positions, setPositions] = useState<Position[]>([]);
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cached = dashboardCache && Date.now() - dashboardCache.fetchedAt < CACHE_TTL_MS ? dashboardCache : null;
+
+  const [movements, setMovements] = useState<Movement[]>(cached?.movements ?? []);
+  const [positions, setPositions] = useState<Position[]>(cached?.positions ?? []);
+  const [expenses, setExpenses] = useState<Expense[]>(cached?.expenses ?? []);
+  const [loading, setLoading] = useState(!cached);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const isFetchingRef = useRef(false);
 
   useEffect(() => {
+    const fresh = dashboardCache && Date.now() - dashboardCache.fetchedAt < CACHE_TTL_MS;
+    if (fresh && retryCount === 0) return;
+
     let isMounted = true;
+    isFetchingRef.current = true;
+
     const loadData = async () => {
       try {
         setLoading(true);
         setError(null);
-        const [movementsData, workLogsData, positionsData, expensesData] = await Promise.all([
+        const [movementsData, positionsData, expensesData] = await Promise.all([
           getMovements(),
-          getWorkLogs(),
           getPositions(),
           getExpenses(),
         ]);
         if (isMounted) {
+          dashboardCache = { movements: movementsData, positions: positionsData, expenses: expensesData, fetchedAt: Date.now() };
           setMovements(movementsData);
-          setWorkLogs(workLogsData);
           setPositions(positionsData);
           setExpenses(expensesData);
         }
@@ -35,14 +52,13 @@ const Dashboard: React.FC = () => {
         if (isMounted) {
           const msg = err instanceof Error ? err.message : 'Ошибка загрузки данных';
           const isNetwork = /timeout|network|failed to fetch|ERR_/i.test(msg);
-          setError(isNetwork
-            ? 'Не удалось загрузить данные. Проверьте подключение к интернету.'
-            : msg);
+          setError(isNetwork ? 'Не удалось загрузить данные. Проверьте подключение к интернету.' : msg);
         }
       } finally {
-        if (isMounted) setLoading(false);
+        if (isMounted) { setLoading(false); isFetchingRef.current = false; }
       }
     };
+
     loadData();
     return () => { isMounted = false; };
   }, [retryCount]);
@@ -93,8 +109,9 @@ const Dashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      <div className="flex flex-col items-center justify-center min-h-[320px] gap-4">
+        <Loader2 className="w-10 h-10 animate-spin text-blue-600" aria-hidden />
+        <p className="text-slate-500 text-sm">Загрузка данных…</p>
       </div>
     );
   }
