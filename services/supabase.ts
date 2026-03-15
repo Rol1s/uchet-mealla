@@ -406,7 +406,7 @@ export async function deleteWorkLog(id: string): Promise<void> {
   if (error) throw normalizeDbError(error);
 }
 
-// === Expenses ===
+// === Expenses (Finance) ===
 
 export async function getExpenses(): Promise<Expense[]> {
   const { data, error } = await supabase
