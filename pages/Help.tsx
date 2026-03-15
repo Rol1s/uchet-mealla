@@ -516,53 +516,72 @@ const Help: React.FC = () => {
 
       {/* ========== WHAT'S NEW ========== */}
       <Section id="updates" icon={<Megaphone size={20} />} title="Что нового (март 2026)" defaultOpen>
-        <div className="text-sm text-slate-600 space-y-4 mt-3">
-          <p className="font-medium text-slate-800">Ниже — всё, что добавили и изменили в приложении.</p>
+        <div className="text-sm text-slate-600 space-y-5 mt-3">
 
-          <div>
-            <h4 className="font-semibold text-slate-800 mb-1">Движение металла</h4>
-            <ul className="list-disc list-inside space-y-0.5 text-slate-600">
-              <li><strong>Способ оплаты</strong> — при создании и редактировании движения можно выбрать «Нал» или «Безнал». В таблице движений добавлена колонка «Оплата».</li>
-              <li><strong>Редактирование</strong> — у каждой записи есть кнопка редактирования (карандаш). Можно изменить дату, операцию, вес, цену за тонну, погрузку/разгрузку, примечание и способ оплаты. Компанию, материал, размер и владение при редактировании не меняют (чтобы не сбивать остатки).</li>
-            </ul>
+          {/* Update 2 */}
+          <div className="border border-blue-200 rounded-xl overflow-hidden">
+            <div className="bg-blue-600 px-4 py-2.5 flex items-center justify-between">
+              <h4 className="font-bold text-white text-sm">Обновление 2 — Деньги: журнал платежей</h4>
+              <span className="text-blue-200 text-xs">март 2026</span>
+            </div>
+            <div className="p-4 space-y-3">
+              <div>
+                <p className="font-semibold text-slate-800 mb-1">Раздел «Деньги» — три вкладки</p>
+                <ul className="list-disc list-inside space-y-0.5 text-slate-600">
+                  <li><strong>Сводка</strong> — карточки, таблица по компаниям и график расходов (как раньше).</li>
+                  <li><strong>Приход</strong> — таблица всех денежных поступлений: дата, сумма, нал/безнал, плательщик, получатель, примечание.</li>
+                  <li><strong>Расход</strong> — таблица всех денежных выплат: закупки металла + все расходы (транспорт, аренда и т.д.). Колонка «Статус» показывает оплачен ли расход.</li>
+                </ul>
+              </div>
+              <div className="bg-slate-50 rounded-lg p-3">
+                <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Как работает</p>
+                <p className="text-sm text-slate-600">Данные берутся из уже введённых движений и расходов — ничего вводить дополнительно не нужно. Приход = продажи металла. Расход = закупки металла + все записи из раздела «Расходы». В каждой таблице есть итоговая сумма.</p>
+              </div>
+            </div>
           </div>
 
-          <div>
-            <h4 className="font-semibold text-slate-800 mb-1">Расходы</h4>
-            <ul className="list-disc list-inside space-y-0.5 text-slate-600">
-              <li><strong>Редактирование</strong> — у каждой записи расхода появилась кнопка редактирования. Можно менять все поля: дату, категорию, описание, сумму, компанию, примечание и статус оплаты.</li>
-              <li><strong>Статус оплаты</strong> — при создании и редактировании расхода можно указать «Оплачено» или «Не оплачено». В таблице расходов отображается колонка «Статус» с цветными пометками.</li>
-            </ul>
+          {/* Update 1 */}
+          <div className="border border-slate-200 rounded-xl overflow-hidden">
+            <div className="bg-slate-700 px-4 py-2.5 flex items-center justify-between">
+              <h4 className="font-bold text-white text-sm">Обновление 1 — Оплата, редактирование, быстрота</h4>
+              <span className="text-slate-400 text-xs">март 2026</span>
+            </div>
+            <div className="p-4 space-y-3">
+              <div>
+                <p className="font-semibold text-slate-800 mb-1">Движение металла</p>
+                <ul className="list-disc list-inside space-y-0.5 text-slate-600">
+                  <li><strong>Способ оплаты</strong> — при создании движения выбирается «Нал» или «Безнал».</li>
+                  <li><strong>Редактирование</strong> — кнопка карандаша у каждой записи. Можно изменить дату, вес, цену, примечание и способ оплаты.</li>
+                </ul>
+              </div>
+              <div>
+                <p className="font-semibold text-slate-800 mb-1">Расходы</p>
+                <ul className="list-disc list-inside space-y-0.5 text-slate-600">
+                  <li><strong>Редактирование</strong> — кнопка карандаша, можно менять все поля.</li>
+                  <li><strong>Статус оплаты</strong> — «Оплачено» / «Не оплачено» с цветными пометками в таблице.</li>
+                </ul>
+              </div>
+              <div>
+                <p className="font-semibold text-slate-800 mb-1">Удобство</p>
+                <ul className="list-disc list-inside space-y-0.5 text-slate-600">
+                  <li><strong>Защита данных</strong> — при закрытии формы без сохранения появляется подтверждение.</li>
+                  <li><strong>Быстрее загрузка</strong> — интерфейс открывается мгновенно, данные догружаются в фоне.</li>
+                </ul>
+              </div>
+            </div>
           </div>
 
-          <div>
-            <h4 className="font-semibold text-slate-800 mb-1">Деньги (финансы)</h4>
-            <ul className="list-disc list-inside space-y-0.5 text-slate-600">
-              <li>В блоке «Расходы» теперь показывается разбивка: <strong>Оплачено: X ₽</strong> и <strong>Не оплачено: Y ₽</strong>.</li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-semibold text-slate-800 mb-1">Удобство и надёжность</h4>
-            <ul className="list-disc list-inside space-y-0.5 text-slate-600">
-              <li><strong>Защита от потери данных</strong> — при закрытии формы (движение или расход) без сохранения появляется вопрос «Закрыть без сохранения?», чтобы случайно не потерять введённое (например, примечание).</li>
-              <li><strong>Роль администратора</strong> — исправлена ситуация, когда роль «Админ» могла временно отображаться как «Оператор» из‑за медленной загрузки профиля. Теперь используется кэш роли и повторные запросы к серверу.</li>
-              <li><strong>Быстрее открытие приложения</strong> — интерфейс показывается сразу по сохранённой сессии, без ожидания ответа от базы. Профиль подгружается в фоне.</li>
-              <li><strong>Подгрузка разделов по мере перехода</strong> — страницы (Движение, Остатки, Расходы и т.д.) загружаются при первом открытии раздела, поэтому первый экран появляется быстрее.</li>
-            </ul>
-          </div>
-
-          <div className="bg-slate-50 rounded-lg p-4 mt-3">
+          <div className="bg-slate-50 rounded-lg p-4">
             <h4 className="font-semibold text-slate-800 mb-2">Как ускорить работу приложения</h4>
             <ul className="text-sm text-slate-600 space-y-1">
               <li>· Используйте стабильный интернет (Wi‑Fi или хороший мобильный сигнал).</li>
               <li>· Откройте приложение в современном браузере (Chrome, Safari, Edge, Firefox).</li>
-              <li>· Не закрывайте вкладку с приложением — при повторном входе данные подгрузятся из кэша.</li>
-              <li>· Если долго грузится — проверьте соединение с интернетом или обновите страницу (F5).</li>
+              <li>· Не закрывайте вкладку — при повторном входе данные загрузятся из кэша мгновенно.</li>
+              <li>· Если долго грузится — проверьте интернет или обновите страницу (F5).</li>
             </ul>
           </div>
 
-          <p className="text-slate-500 pt-2">Если что-то работает не так — напишите администратору или в поддержку.</p>
+          <p className="text-slate-500">Если что-то работает не так — напишите администратору.</p>
         </div>
       </Section>
 
@@ -770,7 +789,7 @@ const Help: React.FC = () => {
 
       {/* ========== 7. MONEY ========== */}
       <Section id="money" icon={<Banknote size={20} />} title="7. Деньги (финансовая сводка)">
-        <p className="text-sm text-slate-600 mt-3">Сколько потратили, сколько заработали, прибыль, у кого сколько металла.</p>
+        <p className="text-sm text-slate-600 mt-3">Сколько потратили, сколько заработали, прибыль, у кого сколько металла. Три вкладки: <strong>Сводка</strong>, <strong>Приход</strong>, <strong>Расход</strong>.</p>
 
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4 text-center">
           <p className="font-semibold text-sm text-blue-800">
@@ -779,7 +798,7 @@ const Help: React.FC = () => {
           <p className="text-xs text-blue-600 mt-1">Зелёная, если плюс. Красная, если минус.</p>
         </div>
 
-        <h4 className="font-semibold text-sm text-slate-700 mt-4">Карточки вверху</h4>
+        <h4 className="font-semibold text-sm text-slate-700 mt-4">Вкладка «Сводка»</h4>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
           <div className="bg-slate-50 rounded-lg p-3 text-center">
             <p className="text-xs font-semibold text-cyan-700">Закупки</p>
@@ -799,7 +818,13 @@ const Help: React.FC = () => {
           </div>
         </div>
 
-        <h4 className="font-semibold text-sm text-slate-700 mt-4">Таблица «По компаниям»</h4>
+        <h4 className="font-semibold text-sm text-slate-700 mt-4">Вкладка «Приход»</h4>
+        <p className="text-sm text-slate-600 mt-1">Детальный журнал денежных поступлений — все продажи металла. Колонки: дата, сумма, нал/безнал, плательщик (покупатель), получатель (НИКАМЕТ), примечание.</p>
+
+        <h4 className="font-semibold text-sm text-slate-700 mt-4">Вкладка «Расход»</h4>
+        <p className="text-sm text-slate-600 mt-1">Детальный журнал денежных выплат — закупки металла + все расходы. Колонки: дата, сумма, нал/безнал, плательщик (НИКАМЕТ), получатель, примечание, статус оплаты.</p>
+
+        <h4 className="font-semibold text-sm text-slate-700 mt-4">Таблица «По компаниям» (в Сводке)</h4>
         <FieldTable
           fields={[
             { name: 'Компания', desc: 'Энергоинвест, Никамет и т.д.' },
@@ -810,11 +835,7 @@ const Help: React.FC = () => {
           ]}
         />
 
-        <Callout>
-          <strong>Энергоинвест</strong> будет отдельной строкой — сколько у них металла, на какую сумму, закупки и продажи.
-        </Callout>
-
-        <p className="text-sm text-slate-500 mt-3">Внизу — горизонтальный график расходов по категориям.</p>
+        <p className="text-sm text-slate-500 mt-3">Внизу Сводки — горизонтальный график расходов по категориям.</p>
       </Section>
 
       {/* ========== 8. WORKS ========== */}
@@ -995,7 +1016,7 @@ DELETE FROM public.companies;`}</CodeBlock>
           },
           {
             q: 'Могу ли я отредактировать движение?',
-            a: 'Нет, пока не поддерживается. Удали и создай заново с правильными данными.',
+            a: 'Да — кнопка карандаша справа в каждой строке. Можно изменить дату, операцию, вес, цену, примечание и способ оплаты. Компания, материал, размер и владение не меняются при редактировании (чтобы не сбить остатки).',
           },
           {
             q: 'Компания не удаляется. Почему?',

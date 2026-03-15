@@ -22,7 +22,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 
 const UPDATE_BANNER_KEY = 'metaltrack_update_dismissed';
-const UPDATE_BANNER_VERSION = '2026-03';
+const UPDATE_BANNER_VERSION = '2026-03b';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -187,8 +187,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <div className="mb-4 flex items-start gap-3 rounded-xl bg-blue-50 border border-blue-200 p-4 text-sm">
                 <Megaphone className="text-blue-600 flex-shrink-0 mt-0.5" size={20} />
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-blue-900">Обновление (март 2026)</p>
-                  <p className="text-blue-800 mt-0.5">Добавлены способ оплаты (нал/безнал), редактирование движений и расходов, статусы «Оплачено/Не оплачено», быстрее загрузка и надёжнее отображение роли.</p>
+                  <p className="font-semibold text-blue-900">Обновление 2 (март 2026)</p>
+                  <p className="text-blue-800 mt-0.5">Раздел «Деньги» — три вкладки: Сводка, Приход и Расход. Детальный журнал платежей как в Excel: дата, сумма, нал/безнал, плательщик, получатель.</p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <NavLink
                       to="/help?scroll=updates"
