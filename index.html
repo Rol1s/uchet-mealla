@@ -5,21 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>MetalTrack Pro - Учет Металла</title>
     <style>
-      /* Custom scrollbar for better aesthetics */
-      ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-      }
-      ::-webkit-scrollbar-track {
-        background: #f1f5f9;
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
-        border-radius: 4px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #94a3b8;
-      }
+      /* Критичные стили: если основной CSS не загрузится (плохой интернет), страница останется читаемой */
+      body { margin: 0; background: #f8fafc; color: #0f172a; font-family: system-ui, -apple-system, sans-serif; }
+      #root { min-height: 100vh; }
+      /* Сайдбар по умолчанию — тёмный, ссылки светлые (пока не подгрузится основной CSS) */
+      aside { background: #1e293b !important; color: #e2e8f0 !important; }
+      aside a { color: #cbd5e1 !important; text-decoration: none !important; }
+      aside a:hover { color: #fff !important; }
+      /* Custom scrollbar */
+      ::-webkit-scrollbar { width: 8px; height: 8px; }
+      ::-webkit-scrollbar-track { background: #f1f5f9; }
+      ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+      ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 
   <script type="importmap">
@@ -35,7 +32,7 @@
   }
 }
 </script>
-  <script type="module" crossorigin src="/uchet-mealla/assets/index-BRi9MCky.js"></script>
+  <script type="module" crossorigin src="/uchet-mealla/assets/index-CZnCKodU.js"></script>
   <link rel="stylesheet" crossorigin href="/uchet-mealla/assets/index-BquMLk7P.css">
 </head>
   <body class="bg-slate-50 text-slate-900 font-sans antialiased">
