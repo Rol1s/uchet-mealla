@@ -33,6 +33,8 @@ const Movements: React.FC = () => {
     ownership: 'own',
     weight: 0,
     linear_meters: 0,
+    wall_thickness: 0,
+    quantity: 0,
     cost: 0,
     price_per_ton: 0,
     payment_method: 'cashless',
@@ -113,6 +115,8 @@ const Movements: React.FC = () => {
       ownership: (m.position?.ownership as OwnershipType) ?? 'own',
       weight: m.weight,
       linear_meters: m.linear_meters ?? 0,
+      wall_thickness: m.wall_thickness ?? 0,
+      quantity: m.quantity ?? 0,
       cost: m.cost ?? 0,
       price_per_ton: m.price_per_ton ?? 0,
       payment_method: (m.payment_method as PaymentMethodType) ?? 'cashless',
@@ -167,6 +171,8 @@ const Movements: React.FC = () => {
           operation: formState.operation,
           weight: formState.weight,
           linear_meters: formState.linear_meters || null,
+          wall_thickness: formState.wall_thickness || null,
+          quantity: formState.quantity || null,
           cost: hasLoadingCost ? formState.cost : 0,
           price_per_ton: formState.price_per_ton,
           note: formState.note,
@@ -314,6 +320,8 @@ const Movements: React.FC = () => {
       { header: 'Материал', accessor: (m: Movement) => m.position?.material?.name || '', width: 20 },
       { header: 'Размер', accessor: (m: Movement) => m.position?.size || '', width: 12 },
       { header: 'Вес (т)', accessor: (m: Movement) => formatNumber(m.weight, 3), width: 10 },
+      { header: 'Стенка', accessor: (m: Movement) => m.wall_thickness ? formatNumber(m.wall_thickness, 1) : '', width: 8 },
+      { header: 'Шт', accessor: (m: Movement) => m.quantity ? String(m.quantity) : '', width: 6 },
       { header: 'Метры', accessor: (m: Movement) => formatNumber(m.linear_meters || 0, 2), width: 10 },
       { header: 'Цена/т', accessor: (m: Movement) => formatCurrency(m.price_per_ton), width: 12 },
       { header: 'Сумма', accessor: (m: Movement) => formatCurrency(m.total_value), width: 12 },
@@ -433,7 +441,7 @@ const Movements: React.FC = () => {
               )}
               <div className="flex justify-between items-center text-sm">
                 <span className="font-medium text-slate-800">
-                  Вес: {item.weight} т{item.linear_meters ? ` · ${item.linear_meters} м` : ''}
+                  Вес: {item.weight} т{item.wall_thickness ? ` · ст.${item.wall_thickness}` : ''}{item.quantity ? ` · ${item.quantity} шт` : ''}{item.linear_meters ? ` · ${item.linear_meters} м` : ''}
                 </span>
                 {item.price_per_ton ? (
                   <span className="text-slate-500">{item.price_per_ton.toLocaleString('ru-RU')} ₽/т</span>
@@ -492,6 +500,8 @@ const Movements: React.FC = () => {
                 <th className="px-2 py-3 whitespace-nowrap max-w-[100px]">Пост./Пок.</th>
                 <th className="px-2 py-3 whitespace-nowrap">Куда</th>
                 <th className="px-2 py-3 text-right whitespace-nowrap">Вес (т)</th>
+                <th className="px-2 py-3 text-right whitespace-nowrap">Стенка</th>
+                <th className="px-2 py-3 text-right whitespace-nowrap">Шт</th>
                 <th className="px-2 py-3 text-right whitespace-nowrap">Метры</th>
                 <th className="px-2 py-3 text-right whitespace-nowrap">Цена/т</th>
                 <th className="px-2 py-3 text-right whitespace-nowrap bg-blue-50/50">Сумма</th>
@@ -504,7 +514,7 @@ const Movements: React.FC = () => {
             <tbody className="divide-y divide-slate-100">
               {filteredMovements.length === 0 ? (
                 <tr>
-                  <td colSpan={14} className="px-3 py-8 text-center text-slate-400">
+                  <td colSpan={16} className="px-3 py-8 text-center text-slate-400">
                     Нет записей. Добавьте первую операцию.
                   </td>
                 </tr>
@@ -536,6 +546,12 @@ const Movements: React.FC = () => {
                     </td>
                     <td className="px-2 py-2 text-slate-600 text-sm">{item.destination || '—'}</td>
                     <td className="px-2 py-2 text-right font-medium text-sm">{item.weight}</td>
+                    <td className="px-2 py-2 text-right text-slate-500 text-sm">
+                      {item.wall_thickness ? item.wall_thickness : '—'}
+                    </td>
+                    <td className="px-2 py-2 text-right text-slate-500 text-sm">
+                      {item.quantity ? item.quantity : '—'}
+                    </td>
                     <td className="px-2 py-2 text-right text-slate-500 text-sm">
                       {item.linear_meters ? item.linear_meters : '—'}
                     </td>
@@ -759,6 +775,28 @@ const Movements: React.FC = () => {
                   className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
                   value={formState.linear_meters || ''}
                   onChange={(e) => updateFormField('linear_meters', parseFloat(e.target.value) || 0)}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Толщина стенки (мм)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  placeholder="Опционально"
+                  className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
+                  value={formState.wall_thickness || ''}
+                  onChange={(e) => updateFormField('wall_thickness', parseFloat(e.target.value) || 0)}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Кол-во (шт)</label>
+                <input
+                  type="number"
+                  step="1"
+                  placeholder="Опционально"
+                  className="w-full border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border"
+                  value={formState.quantity || ''}
+                  onChange={(e) => updateFormField('quantity', parseInt(e.target.value) || 0)}
                 />
               </div>
               <div>

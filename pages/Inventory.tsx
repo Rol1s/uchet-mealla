@@ -87,6 +87,9 @@ const Inventory: React.FC = () => {
           expense: number;
           balance: number;
           value: number;
+          avgPrice: number;
+          _totalCost: number;
+          _totalWeight: number;
         }
       >();
 
@@ -103,6 +106,9 @@ const Inventory: React.FC = () => {
             expense: 0,
             balance: 0,
             value: 0,
+            avgPrice: 0,
+            _totalCost: 0,
+            _totalWeight: 0,
           });
         }
         const item = map.get(key)!;
@@ -112,6 +118,13 @@ const Inventory: React.FC = () => {
         item.balance += p.balance;
         const avgPrice = avgPriceByPosition.get(p.id) || 0;
         item.value += p.balance * avgPrice;
+        const incomeMovs = movements.filter(m => m.position_id === p.id && m.operation === 'income');
+        item._totalCost += incomeMovs.reduce((s, m) => s + (m.total_value || 0), 0);
+        item._totalWeight += incomeMovs.reduce((s, m) => s + m.weight, 0);
+      });
+
+      map.forEach(item => {
+        item.avgPrice = item._totalWeight > 0 ? item._totalCost / item._totalWeight : 0;
       });
 
       return Array.from(map.values()).sort((a, b) => {
@@ -135,6 +148,7 @@ const Inventory: React.FC = () => {
           expense: posMovements.expense,
           balance: p.balance,
           value: p.balance * avgPrice,
+          avgPrice,
         };
       })
       .sort((a, b) => {
@@ -153,8 +167,8 @@ const Inventory: React.FC = () => {
 
   const handleExport = () => {
     const headers = isGroupedByCompany
-      ? ['Компания', 'Материал', 'Размер', 'Приход (т)', 'Расход (т)', 'Остаток (т)', 'Стоимость']
-      : ['Материал', 'Размер', 'Компания', 'Приход (т)', 'Расход (т)', 'Остаток (т)', 'Стоимость'];
+      ? ['Компания', 'Материал', 'Размер', 'Приход (т)', 'Расход (т)', 'Остаток (т)', 'Ср.цена/т', 'Стоимость']
+      : ['Материал', 'Размер', 'Компания', 'Приход (т)', 'Расход (т)', 'Остаток (т)', 'Ср.цена/т', 'Стоимость'];
 
     const rows = inventory.map((item) =>
       isGroupedByCompany
@@ -165,6 +179,7 @@ const Inventory: React.FC = () => {
             item.income.toFixed(3),
             item.expense.toFixed(3),
             item.balance.toFixed(3),
+            item.avgPrice > 0 ? item.avgPrice.toFixed(0) : '',
             item.value > 0 ? item.value.toFixed(0) : '',
           ]
         : [
@@ -174,6 +189,7 @@ const Inventory: React.FC = () => {
             item.income.toFixed(3),
             item.expense.toFixed(3),
             item.balance.toFixed(3),
+            item.avgPrice > 0 ? item.avgPrice.toFixed(0) : '',
             item.value > 0 ? item.value.toFixed(0) : '',
           ]
     );
@@ -197,6 +213,7 @@ const Inventory: React.FC = () => {
           { header: 'Приход (т)', accessor: (i: typeof inventory[0]) => formatNumber(i.income, 3), width: 12 },
           { header: 'Расход (т)', accessor: (i: typeof inventory[0]) => formatNumber(i.expense, 3), width: 12 },
           { header: 'Остаток (т)', accessor: (i: typeof inventory[0]) => formatNumber(i.balance, 3), width: 12 },
+          { header: 'Ср.цена/т', accessor: (i: typeof inventory[0]) => i.avgPrice > 0 ? formatNumber(i.avgPrice, 0) : '', width: 12 },
           { header: 'Стоимость', accessor: (i: typeof inventory[0]) => i.value > 0 ? formatNumber(i.value, 0) : '', width: 12 },
         ]
       : [
@@ -206,6 +223,7 @@ const Inventory: React.FC = () => {
           { header: 'Приход (т)', accessor: (i: typeof inventory[0]) => formatNumber(i.income, 3), width: 12 },
           { header: 'Расход (т)', accessor: (i: typeof inventory[0]) => formatNumber(i.expense, 3), width: 12 },
           { header: 'Остаток (т)', accessor: (i: typeof inventory[0]) => formatNumber(i.balance, 3), width: 12 },
+          { header: 'Ср.цена/т', accessor: (i: typeof inventory[0]) => i.avgPrice > 0 ? formatNumber(i.avgPrice, 0) : '', width: 12 },
           { header: 'Стоимость', accessor: (i: typeof inventory[0]) => i.value > 0 ? formatNumber(i.value, 0) : '', width: 12 },
         ];
     exportToXlsx(inventory, columns, `Остатки_${new Date().toISOString().split('T')[0]}.xlsx`);
@@ -320,11 +338,16 @@ const Inventory: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                {item.value > 0 && (
-                  <div className="text-right text-sm font-medium text-blue-700">
-                    {item.value.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽
-                  </div>
-                )}
+                <div className="flex justify-between items-center text-sm">
+                  {item.avgPrice > 0 && (
+                    <span className="text-slate-500">Ср. цена: {item.avgPrice.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽/т</span>
+                  )}
+                  {item.value > 0 && (
+                    <span className="font-medium text-blue-700">
+                      {item.value.toLocaleString('ru-RU', { maximumFractionDigits: 0 })} ₽
+                    </span>
+                  )}
+                </div>
               </div>
             ))}
             <div className="bg-slate-50 rounded-xl border border-slate-200 p-4 font-bold text-slate-800">
@@ -379,6 +402,9 @@ const Inventory: React.FC = () => {
                   Остаток (т)
                 </th>
                 <th className="px-3 py-3 text-right whitespace-nowrap">
+                  Ср. цена/т
+                </th>
+                <th className="px-3 py-3 text-right whitespace-nowrap">
                   Стоимость (₽)
                 </th>
               </tr>
@@ -387,7 +413,7 @@ const Inventory: React.FC = () => {
               {inventory.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={isGroupedByCompany ? 7 : 8}
+                    colSpan={isGroupedByCompany ? 8 : 9}
                     className="px-4 py-8 text-center text-slate-400"
                   >
                     Нет данных о движениях.
@@ -418,6 +444,9 @@ const Inventory: React.FC = () => {
                       {item.balance.toFixed(3)}
                     </td>
                     <td className="px-3 py-2 text-right text-slate-600">
+                      {item.avgPrice > 0 ? item.avgPrice.toLocaleString('ru-RU', { maximumFractionDigits: 0 }) : '—'}
+                    </td>
+                    <td className="px-3 py-2 text-right text-slate-600">
                       {item.value > 0 ? item.value.toLocaleString('ru-RU', { maximumFractionDigits: 0 }) : '—'}
                     </td>
                   </tr>
@@ -435,6 +464,7 @@ const Inventory: React.FC = () => {
                 <td className="px-3 py-3 text-right text-green-700">{totalIncome.toFixed(3)}</td>
                 <td className="px-3 py-3 text-right text-red-600">{totalExpense.toFixed(3)}</td>
                 <td className="px-3 py-3 text-right">{totalBalance.toFixed(3)}</td>
+                <td className="px-3 py-3 text-right"></td>
                 <td className="px-3 py-3 text-right text-blue-700">
                   {totalValue > 0 ? totalValue.toLocaleString('ru-RU', { maximumFractionDigits: 0 }) : '—'}
                 </td>

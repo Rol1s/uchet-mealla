@@ -66,6 +66,8 @@ export interface Movement {
   operation: OperationType;
   weight: number;
   linear_meters: number | null;
+  wall_thickness: number | null;
+  quantity: number | null;
   cost: number;
   price_per_ton: number;
   total_value: number;
@@ -167,6 +169,8 @@ export interface MovementInput {
   operation: OperationType;
   weight: number;
   linear_meters: number;
+  wall_thickness: number;
+  quantity: number;
   cost: number;
   price_per_ton: number;
   payment_method: PaymentMethodType;

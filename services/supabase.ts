@@ -291,6 +291,8 @@ export async function createMovement(input: MovementInput): Promise<Movement> {
       operation: input.operation,
       weight: input.weight,
       linear_meters: input.linear_meters || null,
+      wall_thickness: input.wall_thickness || null,
+      quantity: input.quantity || null,
       cost: input.cost,
       price_per_ton: input.price_per_ton || 0,
       total_value: totalValue,
@@ -320,7 +322,7 @@ export async function createMovement(input: MovementInput): Promise<Movement> {
   return movement;
 }
 
-export type MovementUpdatePayload = Partial<Pick<Movement, 'movement_date' | 'operation' | 'weight' | 'linear_meters' | 'cost' | 'price_per_ton' | 'note' | 'payment_method' | 'supplier_id' | 'buyer_id' | 'destination'>>;
+export type MovementUpdatePayload = Partial<Pick<Movement, 'movement_date' | 'operation' | 'weight' | 'linear_meters' | 'wall_thickness' | 'quantity' | 'cost' | 'price_per_ton' | 'note' | 'payment_method' | 'supplier_id' | 'buyer_id' | 'destination'>>;
 
 export async function updateMovement(id: string, payload: MovementUpdatePayload): Promise<Movement> {
   const updates: Record<string, unknown> = { ...payload };
