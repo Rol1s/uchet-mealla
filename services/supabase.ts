@@ -457,6 +457,84 @@ export async function createShipmentWithItems(input: ShipmentInput): Promise<Shi
   return shipment;
 }
 
+export async function updateShipmentWithItems(id: string, input: ShipmentInput): Promise<Shipment> {
+  const { error: delErr } = await supabase.from('movements').delete().eq('shipment_id', id);
+  if (delErr) throw normalizeDbError(delErr);
+
+  const { data: shipment, error: sErr } = await supabase
+    .from('shipments')
+    .update({
+      operation: input.operation,
+      company_id: input.company_id,
+      supplier_id: input.supplier_id || null,
+      buyer_id: input.buyer_id || null,
+      shipment_date: input.shipment_date,
+      payment_method: input.payment_method || 'cashless',
+      destination: input.destination || null,
+      note: input.note || null,
+    })
+    .eq('id', id)
+    .select(SHIPMENT_SELECT)
+    .single();
+  if (sErr) throw normalizeDbError(sErr);
+
+  const createdBy = await getCurrentUserId();
+  const movementRows = [];
+  for (const item of input.items) {
+    const position = await findOrCreatePosition(input.company_id, item.material_id, item.size, 'own');
+    const totalValue = item.weight * (item.price_per_ton || 0);
+    movementRows.push({
+      shipment_id: id,
+      position_id: position.id,
+      operation: input.operation,
+      weight: item.weight,
+      linear_meters: item.linear_meters || null,
+      wall_thickness: item.wall_thickness || null,
+      quantity: item.quantity || null,
+      cost: 0,
+      price_per_ton: item.price_per_ton || 0,
+      total_value: totalValue,
+      payment_method: input.payment_method || 'cashless',
+      supplier_id: input.supplier_id || null,
+      buyer_id: input.buyer_id || null,
+      destination: input.destination || null,
+      note: item.note || null,
+      movement_date: input.shipment_date,
+      created_by: createdBy,
+    });
+  }
+  if (movementRows.length > 0) {
+    const { error: mErr } = await supabase.from('movements').insert(movementRows);
+    if (mErr) throw normalizeDbError(mErr);
+  }
+
+  return shipment;
+}
+
+export async function getShipmentsWithTotals(): Promise<(Shipment & { totalWeight: number; totalValue: number; itemCount: number })[]> {
+  const shipmentsData = await getShipments();
+  const { data: movs, error } = await supabase
+    .from('movements')
+    .select('shipment_id, weight, total_value')
+    .not('shipment_id', 'is', null);
+  if (error) throw normalizeDbError(error);
+
+  const totalsMap = new Map<string, { w: number; v: number; c: number }>();
+  for (const m of (movs || [])) {
+    const sid = m.shipment_id as string;
+    const e = totalsMap.get(sid) || { w: 0, v: 0, c: 0 };
+    e.w += m.weight || 0;
+    e.v += m.total_value || 0;
+    e.c += 1;
+    totalsMap.set(sid, e);
+  }
+
+  return shipmentsData.map(s => {
+    const t = totalsMap.get(s.id) || { w: 0, v: 0, c: 0 };
+    return { ...s, totalWeight: t.w, totalValue: t.v, itemCount: t.c };
+  });
+}
+
 export async function deleteShipment(id: string): Promise<void> {
   const { error: mErr } = await supabase.from('movements').delete().eq('shipment_id', id);
   if (mErr) throw normalizeDbError(mErr);

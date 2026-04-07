@@ -25,7 +25,7 @@ import { useAuth } from '../context/AuthContext';
 import { useConfirm } from '../hooks/useConfirm';
 
 const UPDATE_BANNER_KEY = 'metaltrack_update_dismissed';
-const UPDATE_BANNER_VERSION = '2026-03-v32';
+const UPDATE_BANNER_VERSION = '2026-03-v33';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -57,7 +57,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navItems = [
     { to: '/', label: 'Главная', icon: LayoutDashboard },
     { to: '/movements', label: 'Движение', icon: ArrowLeftRight },
-    { to: '/shipments', label: 'Поставки', icon: Truck },
+    { to: '/shipments', label: 'Поставки/Отгрузки', icon: Truck },
     { to: '/inventory', label: 'Остатки', icon: Package },
     { to: '/analytics', label: 'Аналитика', icon: BarChart3 },
     { to: '/finance-cashless', label: 'Безнал', icon: CreditCard },
@@ -164,7 +164,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </div>
 
         <div className="p-3 lg:p-4 border-t border-slate-700 text-center">
-          <span className="text-xs text-slate-500">v3.2.0</span>
+          <span className="text-xs text-slate-500">v3.3.0</span>
         </div>
       </aside>
 
@@ -194,8 +194,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <div className="mb-4 flex items-start gap-3 rounded-xl bg-blue-50 border border-blue-200 p-4 text-sm">
                 <Megaphone className="text-blue-600 flex-shrink-0 mt-0.5" size={20} />
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-blue-900">v3.2 — Поставки + Аналитика средней цены</p>
-                  <p className="text-blue-800 mt-0.5">Групповые поставки (одна машина = одна запись с N позициями), аналитика средней закупочной цены по диаметру, стенке и поставкам.</p>
+                  <p className="font-semibold text-blue-900">v3.3 — Склад, карточка позиции, маржинальность, отгрузки</p>
+                  <p className="text-blue-800 mt-0.5">Склад с группировкой по стенке, карточка позиции с историей и финансами, маржинальный отчёт, табы Поставки/Отгрузки, редактирование поставок.</p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <NavLink
                       to="/updates"

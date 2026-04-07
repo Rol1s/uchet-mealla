@@ -18,6 +18,7 @@ const FinanceCash = lazy(() => import('./pages/FinanceCash'));
 const CounterpartyCard = lazy(() => import('./pages/CounterpartyCard'));
 const Shipments = lazy(() => import('./pages/Shipments'));
 const Analytics = lazy(() => import('./pages/Analytics'));
+const InventoryCard = lazy(() => import('./pages/InventoryCard'));
 const History = lazy(() => import('./pages/History'));
 const Help = lazy(() => import('./pages/Help'));
 const Updates = lazy(() => import('./pages/Updates'));
@@ -60,6 +61,7 @@ const App: React.FC = () => (
           <Route path="/movements" element={<Movements />} />
           <Route path="/shipments" element={<Shipments />} />
           <Route path="/inventory" element={<Inventory />} />
+          <Route path="/inventory-card" element={<InventoryCard />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/rates" element={<Rates />} />
           <Route path="/works" element={<Works />} />
