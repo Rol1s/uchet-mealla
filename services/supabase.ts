@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { User, Company, Material, ServiceRate, Position, Movement, WorkLog, AuditLog, MovementInput, WorkLogInput, OwnershipType, Expense, ExpenseInput } from '../types';
+import { User, Company, Material, ServiceRate, Position, Movement, WorkLog, AuditLog, MovementInput, WorkLogInput, OwnershipType, Expense, ExpenseInput, Shipment, ShipmentInput } from '../types';
 
 // Supabase configuration — нормализуем URL (на случай дублирования в секретах)
 const rawUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim() || 'https://gbgfezeaaawfwhhlocsz.supabase.co';
@@ -356,6 +356,112 @@ export async function updateMovement(id: string, payload: MovementUpdatePayload)
 export async function deleteMovement(id: string): Promise<void> {
   const { error } = await supabase.from('movements').delete().eq('id', id);
   if (error) throw normalizeDbError(error);
+}
+
+// === Shipments ===
+
+const SHIPMENT_SELECT = `
+  *,
+  company:companies!company_id(*),
+  supplier:companies!supplier_id(*),
+  buyer:companies!buyer_id(*)
+`;
+
+export async function getShipments(): Promise<Shipment[]> {
+  const { data, error } = await supabase
+    .from('shipments')
+    .select(SHIPMENT_SELECT)
+    .order('shipment_date', { ascending: false });
+  if (error) throw normalizeDbError(error);
+  return data || [];
+}
+
+export async function getShipmentWithItems(id: string): Promise<Shipment & { items: Movement[] }> {
+  const { data: shipment, error: sErr } = await supabase
+    .from('shipments')
+    .select(SHIPMENT_SELECT)
+    .eq('id', id)
+    .single();
+  if (sErr) throw normalizeDbError(sErr);
+
+  const { data: items, error: iErr } = await supabase
+    .from('movements')
+    .select(`
+      *,
+      position:positions(*, company:companies(*), material:materials(*)),
+      supplier:companies!supplier_id(*),
+      buyer:companies!buyer_id(*)
+    `)
+    .eq('shipment_id', id)
+    .order('created_at', { ascending: true });
+  if (iErr) throw normalizeDbError(iErr);
+
+  return { ...shipment, items: items || [] };
+}
+
+export async function createShipmentWithItems(input: ShipmentInput): Promise<Shipment> {
+  const createdBy = await getCurrentUserId();
+
+  const { data: shipment, error: sErr } = await supabase
+    .from('shipments')
+    .insert({
+      operation: input.operation,
+      company_id: input.company_id,
+      supplier_id: input.supplier_id || null,
+      buyer_id: input.buyer_id || null,
+      shipment_date: input.shipment_date,
+      payment_method: input.payment_method || 'cashless',
+      destination: input.destination || null,
+      note: input.note || null,
+      created_by: createdBy,
+    })
+    .select(SHIPMENT_SELECT)
+    .single();
+  if (sErr) throw normalizeDbError(sErr);
+
+  const movementRows = [];
+  for (const item of input.items) {
+    const position = await findOrCreatePosition(
+      input.company_id,
+      item.material_id,
+      item.size,
+      'own'
+    );
+    const totalValue = item.weight * (item.price_per_ton || 0);
+    movementRows.push({
+      shipment_id: shipment.id,
+      position_id: position.id,
+      operation: input.operation,
+      weight: item.weight,
+      linear_meters: item.linear_meters || null,
+      wall_thickness: item.wall_thickness || null,
+      quantity: item.quantity || null,
+      cost: 0,
+      price_per_ton: item.price_per_ton || 0,
+      total_value: totalValue,
+      payment_method: input.payment_method || 'cashless',
+      supplier_id: input.supplier_id || null,
+      buyer_id: input.buyer_id || null,
+      destination: input.destination || null,
+      note: item.note || null,
+      movement_date: input.shipment_date,
+      created_by: createdBy,
+    });
+  }
+
+  if (movementRows.length > 0) {
+    const { error: mErr } = await supabase.from('movements').insert(movementRows);
+    if (mErr) throw normalizeDbError(mErr);
+  }
+
+  return shipment;
+}
+
+export async function deleteShipment(id: string): Promise<void> {
+  const { error: mErr } = await supabase.from('movements').delete().eq('shipment_id', id);
+  if (mErr) throw normalizeDbError(mErr);
+  const { error: sErr } = await supabase.from('shipments').delete().eq('id', id);
+  if (sErr) throw normalizeDbError(sErr);
 }
 
 // === Work Logs ===

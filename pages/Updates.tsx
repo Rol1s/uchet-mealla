@@ -1,5 +1,5 @@
 import React from 'react';
-import { Megaphone, Sparkles, Package, Banknote, Edit3, Rocket, Ruler, Wallet, Calendar, FileSpreadsheet, LayoutDashboard, Wrench, CreditCard } from 'lucide-react';
+import { Megaphone, Sparkles, Package, Banknote, Edit3, Rocket, Ruler, Wallet, Calendar, FileSpreadsheet, LayoutDashboard, Wrench, CreditCard, Truck, BarChart3 } from 'lucide-react';
 
 interface UpdateCardProps {
   version: string;
@@ -87,6 +87,38 @@ const Updates: React.FC = () => {
 
       <div className="space-y-4">
 
+        {/* v3.2 */}
+        <UpdateCard
+          version="v3.2"
+          date="15 марта 2026"
+          title="Поставки + Аналитика средней цены"
+          color="green"
+          icon={<Truck size={20} />}
+          isLatest
+        >
+          <ChangeItem title="Поставки (Shipments)">
+            <ul className="list-disc list-inside space-y-0.5">
+              <li>Новый раздел <strong>«Поставки»</strong> в меню — между «Движение» и «Остатки»</li>
+              <li>Одна поставка = одна машина с множеством позиций (труба, стенка, вес, цена)</li>
+              <li>Форма создания с динамическими строками: добавляй/удаляй позиции</li>
+              <li>Автоматический расчёт суммы, итогов и средней цены за тонну</li>
+              <li>Раскрытие поставки (accordion) для просмотра всех позиций</li>
+            </ul>
+          </ChangeItem>
+          <ChangeItem title="Аналитика средней закупочной цены">
+            <ul className="list-disc list-inside space-y-0.5">
+              <li>Новый раздел <strong>«Аналитика»</strong> — три вкладки с отчётами</li>
+              <li><strong>По диаметру:</strong> средняя цена/т по каждому размеру</li>
+              <li><strong>По диаметру + стенка:</strong> детализация с учётом толщины стенки</li>
+              <li><strong>По поставкам:</strong> средняя цена каждой отдельной поставки</li>
+              <li>Общие карточки: закуп (т), стоимость (₽), средняя цена/т</li>
+            </ul>
+          </ChangeItem>
+          <ChangeItem title="Миграция данных">
+            <p>Все существующие движения продолжают работать. Поставки — аддитивная функция. Старые записи не затрагиваются.</p>
+          </ChangeItem>
+        </UpdateCard>
+
         {/* v3.0 */}
         <UpdateCard
           version="v3.0"
@@ -94,7 +126,6 @@ const Updates: React.FC = () => {
           title="Разделение финансов: Безнал + Наличные"
           color="purple"
           icon={<CreditCard size={20} />}
-          isLatest
         >
           <ChangeItem title="Два независимых финансовых раздела">
             <ul className="list-disc list-inside space-y-0.5">

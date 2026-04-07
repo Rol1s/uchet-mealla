@@ -63,6 +63,7 @@ export type PaymentMethodType = 'cash' | 'cashless';
 export interface Movement {
   id: string;
   position_id: string;
+  shipment_id: string | null;
   operation: OperationType;
   weight: number;
   linear_meters: number | null;
@@ -83,6 +84,49 @@ export interface Movement {
   position?: Position;
   supplier?: Company;
   buyer?: Company;
+}
+
+// === Shipment ===
+export interface Shipment {
+  id: string;
+  operation: OperationType;
+  company_id: string;
+  supplier_id: string | null;
+  buyer_id: string | null;
+  shipment_date: string;
+  payment_method: PaymentMethodType;
+  destination: string | null;
+  note: string | null;
+  created_by: string | null;
+  created_at: string;
+  // Joined fields
+  company?: Company;
+  supplier?: Company;
+  buyer?: Company;
+  items?: Movement[];
+}
+
+export interface ShipmentItemInput {
+  material_id: string;
+  size: string;
+  wall_thickness: number;
+  quantity: number;
+  linear_meters: number;
+  weight: number;
+  price_per_ton: number;
+  note: string;
+}
+
+export interface ShipmentInput {
+  operation: OperationType;
+  company_id: string;
+  supplier_id: string;
+  buyer_id: string;
+  shipment_date: string;
+  payment_method: PaymentMethodType;
+  destination: string;
+  note: string;
+  items: ShipmentItemInput[];
 }
 
 // === Expense ===
