@@ -1,0 +1,1 @@
+const a={transport:"Логистика",loading:"Погрузка/Разгрузка",processing:"Обработка",rent_salary:"Аренда/Зарплата",other:"Прочее"},e={transport:"badge-blue",loading:"badge-orange",processing:"badge-green",rent_salary:"badge-red",other:"badge-gray"};export{a as C,e as a};
